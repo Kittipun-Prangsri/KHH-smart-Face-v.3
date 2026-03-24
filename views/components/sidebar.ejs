@@ -1,0 +1,63 @@
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-icon" style="background:transparent;"><img src="/images/LOGO%20KHH.jpg" alt="KHH Hospital Logo"
+        style="width:100%; height:100%; border-radius:10px; object-fit:cover;" /></div>
+    <h5>โรงพยาบาลคลองหาด</h5>
+    <small>ระบบสแกนหน้าบุคลากรโรงพยาบาล</small>
+  </div>
+  <div class="sb-nav">
+    <div class="sb-sec">เมนูหลัก</div>
+    <a href="/" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/' ? 'active' : '' %>"><i
+        class="bi bi-speedometer2"></i> แดชบอร์ดภาพรวม</a>
+    <a href="/attendance"
+      class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/attendance' ? 'active' : '' %>"><i
+        class="bi bi-person-check"></i> บันทึกเข้า-ออกงาน</a>
+    <a href="/personnel"
+      class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/personnel' ? 'active' : '' %>"><i
+        class="bi bi-people"></i> ข้อมูลบุคลากร</a>
+    <a href="/schedule"
+      class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/schedule' ? 'active' : '' %>"><i
+        class="bi bi-clock-history"></i> ตารางเวร</a>
+    <div class="sb-sec">กลุ่มงาน</div>
+    <a href="/department/srt" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/srt' ? 'active' : '' %>"><i class="bi bi-shield-check"></i> ประกันสุขภาพยุทธศาสตร์</a>
+    <a href="/department/gen" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/gen' ? 'active' : '' %>"><i class="bi bi-building"></i> บริหารทั่วไป</a>
+    <a href="/department/pri" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/pri' ? 'active' : '' %>"><i class="bi bi-heart-pulse"></i> บริการปฐมภูมิฯ</a>
+    <a href="/department/pha" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/pha' ? 'active' : '' %>"><i class="bi bi-capsule"></i> เภสัชกรรมและคุ้มครองฯ</a>
+    <a href="/department/dig" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/dig' ? 'active' : '' %>"><i class="bi bi-laptop"></i> สุขภาพดิจิทัล</a>
+    <a href="/department/nur" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/nur' ? 'active' : '' %>"><i class="bi bi-person-heart"></i> การพยาบาล</a>
+    <a href="/department/den" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/den' ? 'active' : '' %>"><i class="bi bi-bandaid"></i> ทันตกรรม</a>
+    <a href="/department/medtech" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/medtech' ? 'active' : '' %>"><i class="bi bi-lungs"></i> เทคนิคการแพทย์</a>
+    <a href="/department/rehab" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/rehab' ? 'active' : '' %>"><i class="bi bi-person-wheelchair"></i> เวชกรรมฟื้นฟู</a>
+    <a href="/department/altmed" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/altmed' ? 'active' : '' %>"><i class="bi bi-flower1"></i> การแพทย์แผนไทยฯ</a>
+    <a href="/department/rad" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/rad' ? 'active' : '' %>"><i class="bi bi-virus"></i> รังสีวิทยา</a>
+    <a href="/department/psy" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/psy' ? 'active' : '' %>"><i class="bi bi-emoji-smile"></i> จิตเวชและยาเสพติด</a>
+    <a href="/department/med" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/med' ? 'active' : '' %>"><i class="bi bi-h-square"></i> การแพทย์</a>
+    <div class="sb-sec">รายงาน</div>
+    <a href="/report/daily"
+      class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/report/daily' ? 'active' : '' %>"><i
+        class="bi bi-bar-chart-line"></i> รายงานรายวัน</a>
+    <a href="/report/monthly"
+      class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/report/monthly' ? 'active' : '' %>"><i
+        class="bi bi-calendar3"></i> รายงานรายเดือน</a>
+    <a href="/report/hours"
+      class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/report/hours' ? 'active' : '' %>"><i
+        class="bi bi-file-earmark-medical"></i> สรุปชั่วโมงทำงาน</a>
+  </div>
+  <div class="sb-foot">
+    <div class="sb-user">
+      <div class="sb-av">
+        <%= typeof user !=='undefined' ? user.initial : 'A' %>
+      </div>
+      <div>
+        <div class="sb-uname">
+          <%= typeof user !=='undefined' ? user.name : 'ผู้ดูแลระบบ' %>
+        </div>
+        <div class="sb-urole">
+          <%= typeof user !=='undefined' ? user.role : 'Administrator' %>
+        </div>
+      </div>
+      <i class="bi bi-three-dots ms-auto" style="color:rgba(255,255,255,.35);font-size:15px;"></i>
+    </div>
+  </div>
+</nav>

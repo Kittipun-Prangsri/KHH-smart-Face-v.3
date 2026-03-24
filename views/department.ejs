@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title><%= deptName %> - MediFace Attend</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+<link rel="stylesheet" href="/css/style.css" />
+<style>
+.stat-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.stat-box { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 20px; flex: 1; min-width: 200px; display: flex; align-items: center; gap: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+.stat-ico { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.stat-val { font-size: 24px; font-weight: 800; color: var(--dark); line-height: 1; margin-bottom: 4px; }
+.stat-lbl { font-size: 13px; color: var(--muted); font-weight: 500; }
+.s1 { background: #EEF2FF; color: #4F46E5; }
+.s2 { background: #ECFDF5; color: #059669; }
+.s3 { background: #FFFBEB; color: #D97706; }
+.s4 { background: #FEF2F2; color: #DC2626; }
+</style>
+</head>
+<body>
+<%- include("components/sidebar") %>
+<div class="main">
+<%- include("components/topbar") %>
+  <div class="page">
+    <div class="d-flex align-items-center mb-4">
+      <div style="background: var(--primary); color: white; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-right: 16px;">
+        <i class="bi bi-diagram-3-fill"></i>
+      </div>
+      <div>
+        <h3 style="color:var(--dark);font-weight:800;margin:0;"><%= deptName %></h3>
+        <span style="color:var(--muted);font-size:14px;">สรุปข้อมูลการลงเวลาและรายชื่อบุคลากรประจำกลุ่มงาน</span>
+      </div>
+    </div>
+
+    <!-- STAT ROW -->
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-ico s1"><i class="bi bi-people-fill"></i></div>
+        <div><div class="stat-val" id="totalStaff">0</div><div class="stat-lbl">บุคลากรในกลุ่มงาน</div></div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-ico s2"><i class="bi bi-check-circle-fill"></i></div>
+        <div><div class="stat-val" id="totalIn">0</div><div class="stat-lbl">เข้างานแล้ววันนี้</div></div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-ico s3"><i class="bi bi-clock-fill"></i></div>
+        <div><div class="stat-val" id="totalLate">0</div><div class="stat-lbl">มาสาย</div></div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-ico s4"><i class="bi bi-x-circle-fill"></i></div>
+        <div><div class="stat-val" id="totalAbsent">0</div><div class="stat-lbl">ขาดงาน / ยังไม่มา</div></div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-card">
+      <div class="card-top d-flex justify-content-between align-items-center">
+        <div>
+          <div class="card-title">รายชื่อและการลงเวลาวันนี้</div>
+        </div>
+        <div>
+          <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="ค้นหาชื่อ..." oninput="applyFilter()" style="width: 200px;">
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="att-tbl">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>บุคลากร</th>
+              <th>กะ</th>
+              <th>สถานะ</th>
+              <th>เวลาเข้า</th>
+              <th>เวลาออก</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr><td colspan="6" class="text-center" style="padding: 30px; color: var(--muted);">กำลังโหลดข้อมูล...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const deptName = "<%= deptName %>";
+const AV_COLORS = ['#4F46E5','#059669','#D97706','#DC2626','#7C3AED','#0891B2','#DB2777','#16A34A'];
+
+let employees = [];
+let filteredData = [];
+
+async function loadData() {
+  try {
+    const res = await fetch('/api/data');
+    if(res.ok) {
+      const db = await res.json();
+      // Filter only employees in THIS department
+      employees = (db.employees || []).filter(e => e.dept === deptName);
+      
+      calculateStats();
+      applyFilter();
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function calculateStats() {
+  document.getElementById('totalStaff').textContent = employees.length;
+  document.getElementById('totalIn').textContent = employees.filter(e => e.status === 'in' || e.status === 'out' || e.status === 'late').length;
+  document.getElementById('totalLate').textContent = employees.filter(e => e.status === 'late').length;
+  document.getElementById('totalAbsent').textContent = employees.filter(e => e.status === 'none' || !e.status || e.status === '').length;
+}
+
+function applyFilter() {
+  const keyword = document.getElementById('searchInput').value.toLowerCase();
+  filteredData = employees.filter(e => e.name.toLowerCase().includes(keyword));
+  renderTable();
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  if(filteredData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="padding: 30px; color: var(--muted);">ไม่พบข้อมูล</td></tr>';
+    return;
+  }
+
+  const STATUS_CHIP = {
+    'in': '<span class="status-chip chip-in"><span class="s-dot dot-in"></span>เข้างาน</span>',
+    'out':  '<span class="status-chip chip-out"><span class="s-dot dot-out"></span>ออกงาน</span>',
+    'late':   '<span class="status-chip chip-late"><span class="s-dot dot-late"></span>มาสาย</span>',
+    'none':  '<span class="status-chip chip-absent"><span class="s-dot dot-absent"></span>ยังไม่มา</span>',
+    '': '<span style="color:var(--muted)">-</span>'
+  };
+
+  tbody.innerHTML = filteredData.map((e, i) => {
+    const color = AV_COLORS[i % AV_COLORS.length];
+    const init = e.name && e.name.length > 0 ? e.name.charAt(0) : '?';
+    const outCls = e.out && e.out !== '' && e.out !== '-' ? 'out' : 'none';
+    
+    // Fallback status if empty
+    const stat = e.status || '';
+    const shiftDisplay = (e.shift && e.shift !== '') ? (e.shift === 'morning' ? 'เช้า' : e.shift) : '-';
+    
+    return `<tr>
+      <td style="color:var(--muted);font-size:11.5px;">${i+1}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:9px;">
+          <div class="av" style="background:${color}; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold;">${init}</div>
+          <div><div style="font-size:13px;font-weight:600;">${e.name || 'ไม่มีชื่อ'}</div><div style="font-size:11px;color:var(--muted);">${e.id || ''}</div></div>
+        </div>
+      </td>
+      <td><span style="font-weight:500; color:var(--muted);">${shiftDisplay}</span></td>
+      <td>${STATUS_CHIP[stat] || stat}</td>
+      <td><span class="time-tag">${e.in || '-'}</span></td>
+      <td><span class="time-tag ${outCls}">${e.out || '-'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+document.addEventListener('DOMContentLoaded', loadData);
+</script>
+</body>
+</html>

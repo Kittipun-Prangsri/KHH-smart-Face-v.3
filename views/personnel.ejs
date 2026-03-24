@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ข้อมูลบุคลากร - MediFace Attend</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+<link rel="stylesheet" href="/css/style.css" />
+<style>
+.search-bar { max-width: 400px; }
+.person-av { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<%- include("components/sidebar") %>
+<div class="main">
+<%- include("components/topbar") %>
+  <div class="page">
+    
+    <div class="filter-bar mb-3 d-flex justify-content-between">
+      <div class="d-flex align-items-center gap-2">
+        <h5 class="mb-0" style="font-weight: 700;">รายชื่อบุคลากรทั้งหมด</h5>
+        <span class="badge" style="background:var(--primary); font-size: 14px;" id="totalCountSpan">0</span>
+      </div>
+      <div>
+        <input type="text" id="searchInput" class="form-control search-bar" placeholder="ค้นหา ชื่อ, นามสกุล, เบอร์โทร..." oninput="applyFilter()">
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div style="overflow-x:auto;">
+        <table class="att-tbl">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>ชื่อ - นามสกุล (ชื่อเล่น)</th>
+              <th>รหัสสแกนนิ้ว</th>
+              <th>แผนก / ตำแหน่ง (รหัส)</th>
+              <th>สถานะการทำงาน</th>
+              <th>เบอร์โทรศัพท์</th>
+              <th>อีเมล</th>
+              <th>วันที่เริ่มงาน</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr>
+              <td colspan="7" class="text-center" style="padding: 40px 0; color: var(--muted);">กำลังโหลดข้อมูล...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <div class="pager-info" id="pagerInfo">แสดง 0 รายการ</div>
+        <nav><ul class="pagination pagination-sm mb-0 gap-1" id="pagination"></ul></nav>
+      </div>
+    </div>
+
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const AV_COLORS = ['#4F46E5','#059669','#D97706','#DC2626','#7C3AED','#0891B2','#DB2777','#16A34A'];
+
+let personnel = [];
+let filteredConfig = [];
+let currentPage = 1;
+const PER_PAGE = 20;
+
+function formatThaiDate(isoString) {
+  if (!isoString) return '—';
+  const d = new Date(isoString);
+  return d.toLocaleDateString('th-TH', { year:'numeric', month:'short', day:'numeric' });
+}
+
+function renderTable() {
+  const start = (currentPage - 1) * PER_PAGE;
+  const pageData = filteredConfig.slice(start, start + PER_PAGE);
+  const tbody = document.getElementById('tableBody');
+
+  if (pageData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding: 40px 0; color: var(--muted);">ไม่พบข้อมูล</td></tr>';
+    document.getElementById('pagerInfo').textContent = 'แสดง 0 รายการ';
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+
+  tbody.innerHTML = pageData.map((e, i) => {
+    const color = AV_COLORS[e.ID % AV_COLORS.length];
+    const initial = (e.HR_FNAME && e.HR_FNAME.length > 0) ? e.HR_FNAME.charAt(0) : 'A';
+    const fullName = `${e.HR_FNAME || ''} ${e.HR_LNAME || ''} ${e.NICKNAME ? `(${e.NICKNAME})` : ''}`.trim() || 'ไม่มีชื่อ';
+
+    return `<tr>
+      <td style="color:var(--muted);font-size:11.5px;">${start + i + 1}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="person-av" style="background:${color}">${initial}</div>
+          <div style="font-size:14px;font-weight:600;">${fullName}</div>
+        </div>
+      </td>
+      <td><span style="font-weight: 600; color: var(--primary);">${e.FINGLE_ID || '—'}</span></td>
+      <td><div style="font-size:12px;color:var(--muted);"><i class="bi bi-tag-fill"></i> แผนก: ${e.HR_DEPARTMENT_NAME || e.HR_DEPARTMENT_ID || '—'}<br><i class="bi bi-person-badge"></i> ตำแหน่ง: ${e.HR_POSITION_ID || '—'}</div></td>
+      <td>
+        <span class="status-chip ${e.HR_STATUS_ID === '01' ? 'chip-in' : 'chip-absent'}" style="font-weight:600;">
+          ${e.HR_STATUS_NAME || e.HR_STATUS_ID || '—'}
+        </span>
+      </td>
+      <td>${e.HR_PHONE || '—'}</td>
+      <td>${e.HR_EMAIL || '—'}</td>
+      <td><span class="status-chip chip-in" style="background:#F1F5F9; color:#475569;">${formatThaiDate(e.HR_STARTWORK_DATE)}</span></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('totalCountSpan').textContent = filteredConfig.length;
+  document.getElementById('pagerInfo').textContent = `แสดง ${start+1}–${Math.min(start+PER_PAGE, filteredConfig.length)} จาก ${filteredConfig.length} รายการ`;
+  
+  // Pagination
+  const totalPages = Math.ceil(filteredConfig.length / PER_PAGE);
+  const ul = document.getElementById('pagination');
+  ul.innerHTML = '';
+  
+  if (totalPages > 1) {
+    let pagesHtml = '';
+    pagesHtml += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" onclick="goPage(${currentPage-1})">&laquo;</a></li>`;
+    
+    // Simple pagination logic
+    let startP = Math.max(1, currentPage - 2);
+    let endP = Math.min(totalPages, currentPage + 2);
+    
+    for (let p = startP; p <= endP; p++) {
+      pagesHtml += `<li class="page-item ${p === currentPage ? 'active' : ''}"><a class="page-link" href="#" onclick="goPage(${p})">${p}</a></li>`;
+    }
+    
+    pagesHtml += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" onclick="goPage(${currentPage+1})">&raquo;</a></li>`;
+    ul.innerHTML = pagesHtml;
+  }
+}
+
+function goPage(p) {
+  const totalPages = Math.ceil(filteredConfig.length / PER_PAGE);
+  if (p < 1 || p > totalPages) return;
+  currentPage = p;
+  renderTable();
+  event.preventDefault();
+}
+
+function applyFilter() {
+  const keyword = document.getElementById('searchInput').value.toLowerCase();
+  
+  filteredConfig = personnel.filter(e => {
+    const nameStr = (e.HR_FNAME + ' ' + e.HR_LNAME).toLowerCase();
+    const phoneStr = (e.HR_PHONE || '').toLowerCase();
+    return nameStr.includes(keyword) || phoneStr.includes(keyword);
+  });
+  
+  currentPage = 1;
+  renderTable();
+}
+
+async function loadData() {
+  try {
+    const res = await fetch('/api/personnel');
+    const data = await res.json();
+    personnel = data.personnel || [];
+    applyFilter();
+  } catch (err) {
+    console.error('Error fetching personnel:', err);
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="7" class="text-center text-danger">เกิดข้อผิดพลาดในการดึงข้อมูล</td></tr>';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadData);
+</script>
+</body>
+</html>

@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ระบบสแกนหน้าบุคลากรโรงพยาบาล</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+
+  <%- include("components/sidebar") %>
+
+    <!-- MAIN -->
+    <div class="main">
+
+      <%- include("components/topbar") %>
+
+        <!-- PAGE -->
+        <div class="page">
+
+          <!-- PAGE -->
+          <div class="page">
+
+            <!-- STAT ROW -->
+            <div class="stat-row" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+              <div class="stat-box">
+                <div class="stat-ico s1"><i class="bi bi-people-fill"></i></div>
+                <div>
+                  <div class="stat-val" id="totalStaff">0</div>
+                  <div class="stat-lbl">บุคลากรทั้งหมด</div>
+                </div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-ico s2" style="background:var(--success-bg); color:var(--success);"><i
+                    class="bi bi-door-open-fill"></i></div>
+                <div>
+                  <div class="stat-val" id="totalIn">0</div>
+                  <div class="stat-lbl">เข้างาน</div>
+                </div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-ico s2"><i class="bi bi-box-arrow-right"></i></div>
+                <div>
+                  <div class="stat-val" id="totalOut">0</div>
+                  <div class="stat-lbl">ออกงาน</div>
+                </div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-ico s3"><i class="bi bi-clock-fill"></i></div>
+                <div>
+                  <div class="stat-val" id="totalLate">0</div>
+                  <div class="stat-lbl">มาสาย</div>
+                </div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-ico s1" style="background:#FEF3C7; color:#D97706;"><i
+                    class="bi bi-calendar-event-fill"></i></div>
+                <div>
+                  <div class="stat-val" id="totalLeave">0</div>
+                  <div class="stat-lbl">ลา</div>
+                </div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-ico s4"><i class="bi bi-x-circle-fill"></i></div>
+                <div>
+                  <div class="stat-val" id="totalAbsent">0</div>
+                  <div class="stat-lbl">ขาด / ยังไม่มา</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- FILTER BAR -->
+            <div class="filter-bar">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1;">
+                <div class="input-group" style="max-width:190px;">
+                  <span class="input-group-text"
+                    style="background:#F8FAFC;border-color:var(--border);border-radius:8px 0 0 8px;font-size:13px;"><i
+                      class="bi bi-calendar3" style="color:var(--muted)"></i></span>
+                  <input type="date" class="form-control" id="dateInput" style="border-radius:0 8px 8px 0;" />
+                </div>
+                <select class="form-select" style="max-width:150px;" id="shiftFilter" onchange="applyFilter()"
+                  style="display:none;">
+                  <option value="all">ทุกกะ</option>
+                </select>
+                <select class="form-select" style="max-width:170px;" id="deptFilter" onchange="applyFilter()">
+                  <option value="">ทุกกลุ่มงาน</option>
+                  <option>กลุ่มงานประกันสุขภาพยุทธศาสตร์</option>
+                  <option>กลุ่มงานบริหารทั่วไป</option>
+                  <option>กลุ่มงานบริการด้านปฐมภูมิและองค์รวม</option>
+                  <option>กลุ่มงานเภสัชกรรมและคุ้มครองผู้บริโภค</option>
+                  <option>กลุ่มงานสุขภาพดิจิทัล</option>
+                  <option>กลุ่มงานการพยาบาล</option>
+                  <option>กลุ่มงานทันตกรรม</option>
+                  <option>กลุ่มงานเทคนิคการแพทย์</option>
+                  <option>กลุ่มงานเวชกรรมฟื้นฟู</option>
+                  <option>กลุ่มงานการแพทย์แผนไทยและการแพทย์ทางเลือก</option>
+                  <option>กลุ่มงานรังสีวิทยา</option>
+                  <option>กลุ่มงานจิตเวชและยาเสพติด</option>
+                  <option>กลุ่มงานการแพทย์</option>
+                </select>
+                <select class="form-select" style="max-width:155px;" id="statusFilter" onchange="applyFilter()">
+                  <option value="">ทุกสถานะ</option>
+                  <option>เข้างาน</option>
+                  <option>ออกงาน</option>
+                  <option>มาสาย</option>
+                  <option>ขาดงาน</option>
+                </select>
+                <input type="text" class="form-control" placeholder="ค้นหาชื่อ / รหัส..." style="max-width:190px;"
+                  id="searchInput" oninput="applyFilter()" />
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn-outline-dark" onclick="exportCSV()"><i class="bi bi-download"></i> ส่งออก</button>
+                <button class="btn-teal" onclick="applyFilter()"><i class="bi bi-funnel-fill"></i> กรอง</button>
+              </div>
+            </div>
+
+            <!-- DEPT TABS -->
+            <div class="d-flex align-items-center justify-content-between mb-2 mt-4" style="overflow-x:auto;">
+              <div class="shift-tabs" id="deptTabs" style="display:flex; gap:8px; padding-bottom:10px;">
+                <button class="shift-tab active all" data-tab="all" onclick="switchTab('all',this)"
+                  style="white-space:nowrap;">
+                  <i class="bi bi-grid-3x3-gap"></i> รวมทุกกลุ่มงาน <span class="tab-badge" id="badge-all"
+                    style="background:#E2E8F0;color:#475569;">0</span>
+                </button>
+
+                <!-- Rendered by JS -->
+              </div>
+            </div>
+            <div style="font-size:12px;color:var(--muted);text-align:right;margin-bottom:10px;">แสดง <span
+                id="rowCountSpan">0</span> รายการ</div>
+
+            <!-- TABLE -->
+            <div class="table-card">
+              <div class="card-top">
+                <div>
+                  <div class="card-title">บันทึกการเข้า-ออกงานบุคลากร</div>
+                  <div class="card-sub" id="tableSubtitle">กะเช้า 08:00–16:00 | กะบ่าย 16:00–24:00 | กะดึก 00:00–08:00
+                  </div>
+                </div>
+                <div style="display:flex;gap:8px;">
+                  <button class="btn-outline-dark" onclick="exportCSV()"><i class="bi bi-file-earmark-excel"></i>
+                    Excel</button>
+                  <button class="btn-outline-dark" onclick="window.print()"><i class="bi bi-printer"></i> พิมพ์</button>
+                </div>
+              </div>
+              <div style="overflow-x:auto;">
+                <table class="att-tbl">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>บุคลากร</th>
+                      <th>แผนก / ตำแหน่ง</th>
+                      <th>กะ</th>
+                      <th>สถานะ</th>
+                      <th>เวลาเข้า</th>
+                      <th>เวลาออก</th>
+                      <th>ชั่วโมงทำงาน</th>
+                      <th>OT</th>
+                      <th>ความแม่นยำ</th>
+                      <th>จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tableBody"></tbody>
+                </table>
+              </div>
+              <div class="pager">
+                <div class="pager-info" id="pagerInfo">แสดง 0 รายการ</div>
+                <nav>
+                  <ul class="pagination pagination-sm mb-0 gap-1" id="pagination"></ul>
+                </nav>
+              </div>
+            </div>
+
+            <!-- BOTTOM GRID -->
+            <div class="bottom-grid">
+
+              <!-- TIMELINE -->
+              <div class="panel">
+                <div class="panel-head">
+                  <div>
+                    <div class="panel-title">ประวัติสแกนล่าสุด</div>
+                    <div class="panel-sub">Real-time activity feed</div>
+                  </div>
+                  <div class="live-pill"><span class="live-dot"></span> Live</div>
+                </div>
+                <div class="tl-list" id="timeline"></div>
+              </div>
+
+              <!-- SERVICE WORK / LEAVE TABLE -->
+              <div class="panel" style="flex:1;">
+                <div class="panel-head">
+                  <div>
+                    <div class="panel-title">แจ้งสถานะ ไปราชการ / ลา</div>
+                    <div class="panel-sub">ข้อมูลประจำวันนี้ (Service Work & Leave)</div>
+                  </div>
+                  <div style="font-size:12px; font-weight:700; color:var(--primary);">วันปัจจุบัน</div>
+                </div>
+                <div style="overflow-x:auto; padding:12px;">
+                  <table class="att-tbl" style="margin:0; border:none; box-shadow:none;">
+                    <thead>
+                      <tr style="background:#F8FAFC;">
+                        <th style="font-size:11px;">บุคลากร</th>
+                        <th style="font-size:11px;">ช่วงเช้า</th>
+                        <th style="font-size:11px;">ช่วงบ่าย</th>
+                      </tr>
+                    </thead>
+                    <tbody id="serviceWorkBody" style="font-size:12px;">
+                      <!-- Data -->
+                    </tbody>
+                  </table>
+                  <div id="serviceWorkEmpty" style="display:none; text-align:center; padding:20px; color:var(--muted); font-size:12px;">ไม่มีข้อมูลการแจ้งลา/ไปราชการในวันนี้</div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /page -->
+        </div><!-- /main -->
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+          /* ================================================================
+             DATA
+          ================================================================ */
+          const AV_COLORS = ['#4F46E5', '#059669', '#D97706', '#DC2626', '#7C3AED', '#0891B2', '#DB2777', '#16A34A'];
+          const PROFESSIONS = ['พยาบาลวิชาชีพ', 'แพทย์', 'เภสัชกร', 'นักกายภาพ', 'เจ้าหน้าที่X-ray', 'นักเทคนิคการแพทย์'];
+          const DEPTS = [
+            'กลุ่มงานประกันสุขภาพยุทธศาสตร์', 'กลุ่มงานบริหารทั่วไป', 'กลุ่มงานบริการด้านปฐมภูมิและองค์รวม',
+            'กลุ่มงานเภสัชกรรมและคุ้มครองผู้บริโภค', 'กลุ่มงานสุขภาพดิจิทัล', 'กลุ่มงานการพยาบาล',
+            'กลุ่มงานทันตกรรม', 'กลุ่มงานเทคนิคการแพทย์', 'กลุ่มงานเวชกรรมฟื้นฟู',
+            'กลุ่มงานการแพทย์แผนไทยและการแพทย์ทางเลือก', 'กลุ่มงานรังสีวิทยา', 'กลุ่มงานจิตเวชและยาเสพติด',
+            'กลุ่มงานการแพทย์'
+          ];
+          const DEPT_COLORS = [
+            '#EF4444', '#7C3AED', '#3B82F6', '#059669', '#F59E0B', '#0891B2', '#EC4899',
+            '#14B8A6', '#6366F1', '#F43F5E', '#10B981', '#8B5CF6', '#D946EF'
+          ];
+
+          const SHIFTS = {
+            morning: { label: 'กะเช้า', emoji: '🌅', time: '08:00–16:00', cls: 'morning', start: '08:00', end: '16:00' },
+            afternoon: { label: 'กะบ่าย', emoji: '🌤️', time: '16:00–24:00', cls: 'afternoon', start: '16:00', end: '24:00' },
+            night: { label: 'กะดึก', emoji: '🌙', time: '00:00–08:00', cls: 'night', start: '00:00', end: '08:00' },
+          };
+
+          let employees = [];
+          let timelineData = [];
+          let scanQueue = [];
+          let serviceWorkData = [];
+
+          /* ================================================================
+             STATE
+          ================================================================ */
+          let activeTab = 'all';
+          let currentPage = 1;
+          const PER_PAGE = 8;
+          let filteredData = [];
+
+          /* ================================================================
+             DEPT OVERVIEW
+          ================================================================ */
+          function computeDeptStats(dept) {
+            const data = employees.filter(e => e.dept === dept);
+            const total = data.length;
+            const present = data.filter(e => e.status === 'in' || e.status === 'out' || e.status === 'late').length;
+            const late = data.filter(e => e.status === 'late').length;
+            const absent = data.filter(e => e.status === 'none' || e.status === '').length;
+            const leave = data.filter(e => e.status === 'leave').length;
+            const pct = total > 0 ? Math.round(present / total * 100) : 0;
+            return { total, present, late, absent, leave, pct };
+          }
+
+
+          /* ================================================================
+             STAT ROW
+          ================================================================ */
+          function renderStats() {
+            document.getElementById('totalStaff').textContent = employees.length;
+            document.getElementById('totalIn').textContent = employees.filter(e => e.status === 'in' || e.status === 'late').length;
+            document.getElementById('totalOut').textContent = employees.filter(e => e.status === 'out').length;
+            document.getElementById('totalLate').textContent = employees.filter(e => e.status === 'late').length;
+            document.getElementById('totalLeave').textContent = employees.filter(e => e.status === 'leave').length;
+            document.getElementById('totalAbsent').textContent = employees.filter(e => e.status === 'none' || e.status === '').length;
+          }
+
+          /* ================================================================
+             TAB BADGES
+          ================================================================ */
+          function renderBadges() {
+            document.getElementById('badge-all').textContent = employees.length;
+            const tabsContainer = document.getElementById('deptTabs');
+
+            // Keep the 'all' button
+            let tabsHtml = `<button class="shift-tab active all" data-tab="all" onclick="switchTab('all',this)" style="white-space:nowrap;">
+    <i class="bi bi-grid-3x3-gap"></i> รวมทุกกลุ่มงาน <span class="tab-badge" id="badge-all" style="background:#E2E8F0;color:#475569;">${employees.length}</span>
+  </button>`;
+
+            DEPTS.forEach((dept, i) => {
+              const count = employees.filter(e => e.dept === dept).length;
+              tabsHtml += `<button class="shift-tab" data-tab="${dept}" onclick="switchTab('${dept}',this)" style="white-space:nowrap;">
+      ${dept} <span class="tab-badge" style="background:#E2E8F0;color:#475569;">${count}</span>
+    </button>`;
+            });
+
+            tabsContainer.innerHTML = tabsHtml;
+          }
+
+          /* ================================================================
+             TAB SWITCH
+          ================================================================ */
+          function switchTab(tab, btn) {
+            activeTab = tab;
+            document.querySelectorAll('.shift-tab').forEach(b => b.classList.remove('active'));
+            if (btn) {
+              btn.classList.add('active');
+            } else {
+              // Escape quotes if dept name has them, but our DEPTs don't
+              const found = document.querySelector(`.shift-tab[data-tab="${tab}"]`);
+              if (found) found.classList.add('active');
+            }
+            // sync dropdown
+            document.getElementById('deptFilter').value = tab === 'all' ? '' : tab;
+            applyFilter();
+          }
+
+          /* ================================================================
+             FILTER & TABLE
+          ================================================================ */
+          function applyFilter() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const dept = document.getElementById('deptFilter').value;
+            const status = document.getElementById('statusFilter').value;
+
+            // sync tab if filtered via dropdown
+            if (dept !== '' && activeTab !== dept) {
+              activeTab = dept;
+              document.querySelectorAll('.shift-tab').forEach(b => b.classList.remove('active'));
+              const found = document.querySelector(`.shift-tab[data-tab="${dept}"]`);
+              if (found) found.classList.add('active');
+            } else if (dept === '' && activeTab !== 'all') {
+              activeTab = 'all';
+              document.querySelectorAll('.shift-tab').forEach(b => b.classList.remove('active'));
+              const found = document.querySelector(`.shift-tab[data-tab="all"]`);
+              if (found) found.classList.add('active');
+            }
+
+            filteredData = employees.filter(e => {
+              const matchDept = activeTab === 'all' || e.dept === activeTab;
+              const matchStatus = !status || e.status === status;
+              const matchSearch = !search || e.name.toLowerCase().includes(search) || (e.id && e.id.toLowerCase().includes(search));
+              return matchDept && matchStatus && matchSearch;
+            });
+            currentPage = 1;
+            renderTable();
+          }
+
+          /* ================================================================
+             RENDER TABLE
+          ================================================================ */
+          const SHIFT_PILL = {
+            morning: '<span class="shift-pill pill-m">🌅 เช้า</span>',
+            afternoon: '<span class="shift-pill pill-a">🌤️ บ่าย</span>',
+            night: '<span class="shift-pill pill-n">🌙 ดึก</span>',
+          };
+          const STATUS_CHIP = {
+            'in': '<span class="status-chip chip-in">เข้างาน</span>',
+            'out': '<span class="status-chip chip-out">ออกงาน</span>',
+            'late': '<span class="status-chip chip-late">มาสาย</span>',
+            'leave': '<span class="status-chip" style="background:#FEF3C7; color:#D97706; border-color:#FCD34D;">ลา</span>',
+            'none': '<span class="status-chip chip-absent">ยังไม่มา</span>',
+            '': '<span style="color:var(--muted)">-</span>'
+          };
+
+          function renderTable() {
+            const start = (currentPage - 1) * PER_PAGE;
+            const pageData = filteredData.slice(start, start + PER_PAGE);
+            const tbody = document.getElementById('tableBody');
+
+            tbody.innerHTML = pageData.map((e, i) => {
+              const color = AV_COLORS[(employees.indexOf(e)) % AV_COLORS.length];
+              const init = e.name && e.name.length > 0 ? e.name.charAt(0) : 'A';
+              const outCls = e.out && e.out !== '' && e.out !== '-' ? 'out' : 'none';
+
+              // Fallback status if empty
+              const stat = e.status || '';
+              const shiftDisplay = (e.shift && e.shift !== '') ? (e.shift === 'morning' ? 'เช้า' : e.shift) : '-';
+
+              let statusHtml = STATUS_CHIP[stat] || stat;
+              if (stat === 'leave' && e.leave_status) {
+                statusHtml = `<span class="status-chip" style="background:#FEF3C7; color:#D97706; border-color:#FCD34D;">${e.leave_status}</span>`;
+              }
+
+              const confHtml = e.conf > 0
+                ? `<div><div class="conf-bar"><div class="conf-fill" style="width:${e.conf}%;background:${e.conf >= 97 ? '#10B981' : e.conf >= 93 ? '#F59E0B' : '#EF4444'}"></div></div><span style="font-size:11px;font-weight:700;">${e.conf}%</span></div>`
+                : `<span style="font-size:12px;color:var(--muted)">-</span>`;
+              const otHtml = e.ot ? `<span class="status-chip chip-ot">${e.ot}</span>` : `<span style="font-size:12px;color:var(--muted)">-</span>`;
+
+              return `<tr>
+      <td style="color:var(--muted);font-size:11.5px;">${start + i + 1}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:9px;">
+          <div class="av" style="background:${color}">${init}</div>
+          <div><div style="font-size:13px;font-weight:600;">${e.name || 'ไม่มีชื่อ'}</div><div style="font-size:11px;color:var(--muted);">${e.id || ''} ${e.role || ''}</div></div>
+        </div>
+      </td>
+      <td><span style="font-size:12px;background:var(--surface);padding:2px 9px;border-radius:6px;font-weight:600;">${e.dept}</span></td>
+      <td><span style="font-weight:500; color:var(--muted);">${shiftDisplay}</span></td>
+      <td>${statusHtml}</td>
+      <td><span class="time-tag">${e.in || '-'}</span></td>
+      <td><span class="time-tag ${outCls}">${e.out || '-'}</span></td>
+      <td style="font-size:13px;font-weight:700;color:var(--primary);">${e.hours || '0'}</td>
+      <td>${otHtml}</td>
+      <td>${confHtml}</td>
+      <td>
+        <div style="display:flex;gap:4px;">
+          <div class="act-btn" title="ดูรายละเอียด"><i class="bi bi-eye"></i></div>
+          <div class="act-btn" title="แก้ไข"><i class="bi bi-pencil"></i></div>
+        </div>
+      </td>
+    </tr>`;
+            }).join('');
+
+            document.getElementById('rowCountSpan').textContent = filteredData.length;
+            document.getElementById('pagerInfo').textContent = `แสดง ${start + 1}–${Math.min(start + PER_PAGE, filteredData.length)} จาก ${filteredData.length} รายการ`;
+            renderPagination();
+          }
+
+          function renderPagination() {
+            const totalPages = Math.ceil(filteredData.length / PER_PAGE);
+            const ul = document.getElementById('pagination');
+            ul.innerHTML = '';
+            const prev = document.createElement('li');
+            prev.className = 'page-item' + (currentPage === 1 ? ' disabled' : '');
+            prev.innerHTML = `<a class="page-link" href="#" onclick="goPage(${currentPage - 1})">&laquo;</a>`;
+            ul.appendChild(prev);
+            for (let p = 1; p <= totalPages; p++) {
+              const li = document.createElement('li');
+              li.className = 'page-item' + (p === currentPage ? ' active' : '');
+              li.innerHTML = `<a class="page-link" href="#" onclick="goPage(${p})">${p}</a>`;
+              ul.appendChild(li);
+            }
+            const next = document.createElement('li');
+            next.className = 'page-item' + (currentPage === totalPages || totalPages === 0 ? ' disabled' : '');
+            next.innerHTML = `<a class="page-link" href="#" onclick="goPage(${currentPage + 1})">&raquo;</a>`;
+            ul.appendChild(next);
+          }
+
+          function goPage(p) {
+            const totalPages = Math.ceil(filteredData.length / PER_PAGE);
+            if (p < 1 || p > totalPages) return;
+            currentPage = p;
+            renderTable();
+            event.preventDefault();
+          }
+
+          /* ================================================================
+             TIMELINE
+          ================================================================ */
+          function renderTimeline() {
+            const SHIFT_COLOR = { morning: '#F59E0B', afternoon: '#3B82F6', night: '#7C3AED' };
+            const el = document.getElementById('timeline');
+            el.innerHTML = timelineData.map(t => {
+              const cls = t.type === 'in' ? 'in' : t.type === 'out' ? 'out' : 'late';
+              const ic = t.type === 'in' ? 'bi-box-arrow-in-right' : t.type === 'out' ? 'bi-box-arrow-right' : 'bi-clock-history';
+              const sc = SHIFT_COLOR[t.shift] || '#999';
+              const shiftLabel = (t.shift && SHIFTS[t.shift]) ? ` · <span style="color:${sc};font-weight:600;">${SHIFTS[t.shift].label}</span>` : '';
+              const locationLabel = t.location ? ` · <span style="color:var(--primary);"><i class="bi bi-geo-alt-fill"></i> ${t.location}</span>` : '';
+              const tempLabel = t.temp ? ` · <span class="badge ${t.tempStatus === 'Normal' ? 'bg-success' : 'bg-danger'}" style="font-size:10px;"><i class="bi bi-thermometer-half"></i> ${t.temp}°C</span>` : '';
+              return `<div class="tl-item">
+      <div class="tl-icon ${cls}"><i class="bi ${ic}"></i></div>
+      <div class="tl-body">
+        <div class="tl-name">${t.name}</div>
+        <div class="tl-meta">${t.dept}${shiftLabel}${locationLabel}${tempLabel} · ${t.action}</div>
+      </div>
+      <div class="tl-time">${t.time}</div>
+    </div>`;
+            }).join('');
+          }
+
+          /* ================================================================
+             SERVICE WORK / LEAVE
+          ================================================================ */
+          function renderServiceWork() {
+            const tbody = document.getElementById('serviceWorkBody');
+            const empty = document.getElementById('serviceWorkEmpty');
+            if (!serviceWorkData || serviceWorkData.length === 0) {
+              tbody.innerHTML = '';
+              empty.style.display = 'block';
+              return;
+            }
+            empty.style.display = 'none';
+            tbody.innerHTML = serviceWorkData.map(s => {
+              return `<tr>
+                <td>
+                  <div style="font-weight:600;">${s.name}</div>
+                  <div style="font-size:10px; color:var(--muted);">${s.dept}</div>
+                </td>
+                <td><span class="status-chip" style="background:#E0F2FE; color:#0369A1; border-color:#BAE6FD;">${s.morning || '-'}</span></td>
+                <td><span class="status-chip" style="background:#F0F9FF; color:#0369A1; border-color:#BAE6FD;">${s.afternoon || '-'}</span></td>
+              </tr>`;
+            }).join('');
+          }
+
+          /* ================================================================
+             EXPORT
+          ================================================================ */
+          function exportCSV() {
+            let csv = 'รหัส,ชื่อ,แผนก,ตำแหน่ง,กะ,สถานะ,เวลาเข้า,เวลาออก,ชั่วโมงทำงาน,OT,ความแม่นยำ\n';
+            filteredData.forEach(e => {
+              csv += `${e.id},"${e.name}","${e.dept}","${e.role}","${SHIFTS[e.shift]?.label || e.shift}",${e.status},${e.in},${e.out},${e.hours},${e.ot || '—'},${e.conf > 0 ? e.conf + '%' : '—'}\n`;
+            });
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'hospital_attendance_' + new Date().toISOString().split('T')[0] + '.csv';
+            a.click();
+          }
+
+          /* ================================================================
+             DATE / INIT
+          ================================================================ */
+          function setDate() {
+            const now = new Date();
+            document.getElementById('currentDate').textContent =
+              now.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            const dateInput = document.getElementById('dateInput');
+            if (!dateInput.value) {
+              dateInput.value = now.toISOString().split('T')[0];
+            }
+          }
+
+          document.getElementById('dateInput').addEventListener('change', function(e) {
+            const selectedDate = e.target.value;
+            fetchData(selectedDate);
+          });
+
+          async function fetchData(date) {
+            try {
+              const s = loadSettings();
+              const lateMin = s.lateMin || 31;
+              const workStart = s.workStart || '08:00';
+              
+              let url = `/api/data?date=${date || ''}&lateMin=${lateMin}&workStart=${workStart}`;
+              const res = await fetch(url);
+              if (res.ok) {
+                const db = await res.json();
+                employees = db.employees || [];
+                timelineData = db.timelineData || [];
+                scanQueue = db.scanQueue || [];
+                serviceWorkData = db.serviceWorkData || [];
+                
+                // If date was provided, update the header subtitle or state
+                if (date) {
+                  const d = new Date(date);
+                  document.getElementById('currentDate').textContent =
+                    d.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                }
+              }
+            } catch (err) {
+              console.error('API Error:', err);
+            }
+
+            renderStats();
+            renderBadges();
+            applyFilter();
+            renderTimeline();
+            renderServiceWork();
+          }
+
+          async function init() {
+            setDate();
+            const initialDate = document.getElementById('dateInput').value;
+            await fetchData(initialDate);
+          }
+
+          async function refreshData(btn) {
+            const icon = btn ? btn.querySelector('i') : null;
+            if (icon) icon.style.animation = 'spin 0.7s linear infinite';
+            if (btn) btn.style.pointerEvents = 'none';
+            const date = document.getElementById('dateInput').value;
+            await fetchData(date);
+            if (icon) icon.style.animation = '';
+            if (btn) btn.style.pointerEvents = '';
+          }
+
+
+          // init() moved to the end of the file to ensure all settings functions are loaded
+        </script>
+<!-- ========================================================
+     SETTINGS MODAL
+     ======================================================== -->
+
+<div id="settingsModal" style="
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:rgba(0,0,0,0.45); backdrop-filter:blur(4px);
+  align-items:center; justify-content:center;">
+  <div style="
+    background:var(--card,#fff); border-radius:18px; width:660px; max-width:96vw;
+    max-height:90vh; overflow:hidden; box-shadow:0 24px 64px rgba(0,0,0,0.22);
+    display:flex; flex-direction:column; animation:slideUp .25s ease;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:22px 28px 16px;border-bottom:1px solid var(--border,#E2E8F0);">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="background:linear-gradient(135deg,#6366F1,#8B5CF6);border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;">
+          <i class="bi bi-gear-fill" style="color:#fff;font-size:18px;"></i>
+        </div>
+        <div>
+          <div style="font-size:17px;font-weight:700;color:var(--text,#1E293B);">ตั้งค่าระบบ</div>
+          <div style="font-size:12px;color:var(--muted,#94A3B8);">System Settings</div>
+        </div>
+      </div>
+      <button onclick="closeSettings()" style="border:none;background:var(--surface,#F8FAFC);border-radius:8px;width:36px;height:36px;cursor:pointer;font-size:18px;color:var(--muted,#94A3B8);">✕</button>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display:flex;gap:4px;padding:14px 28px 0;border-bottom:1px solid var(--border,#E2E8F0);">
+      <button class="stab active" id="stab-1" onclick="switchSettingsTab(1)">
+        <i class="bi bi-sliders"></i> ตั้งค่าทำงาน
+      </button>
+      <button class="stab" id="stab-2" onclick="switchSettingsTab(2)">
+        <i class="bi bi-clock"></i> ตั้งเวลาทำงานบุคลากร
+      </button>
+      <button class="stab" id="stab-3" onclick="switchSettingsTab(3)">
+        <i class="bi bi-calendar3"></i> ตั้งค่าประเภทเวร
+      </button>
+    </div>
+
+    <!-- Body (scrollable) -->
+    <div style="flex:1;overflow-y:auto;padding:24px 28px;">
+
+      <!-- TAB 1: Work Settings -->
+      <div id="spanel-1" class="spanel">
+        <div class="sgroup">
+          <label class="slabel">เวลาเริ่มงาน (เช้า)</label>
+          <input type="time" id="s-work-start" class="sinput" value="08:00">
+        </div>
+        <div class="sgroup">
+          <label class="slabel">เวลาเลิกงาน (เช้า)</label>
+          <input type="time" id="s-work-end" class="sinput" value="16:00">
+        </div>
+        <div class="sgroup">
+          <label class="slabel">เกณฑ์มาสาย (นาที หลังเวลาเริ่มงาน)</label>
+          <input type="number" id="s-late-min" class="sinput" value="31" min="1" max="120">
+        </div>
+        <div class="sgroup">
+          <label class="slabel">วันทำงาน</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+            <% const days = ['อา','จ','อ','พ','พฤ','ศ','ส']; %>
+            <% const dayIds = ['sun','mon','tue','wed','thu','fri','sat']; %>
+            <% for(let d=0;d<7;d++){ %>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+              <input type="checkbox" id="s-day-<%= dayIds[d] %>" <%= (d>=1&&d<=5)?'checked':'' %>>
+              <span style="font-size:13px;"><%= days[d] %></span>
+            </label>
+            <% } %>
+          </div>
+        </div>
+        <div class="sgroup">
+          <label class="slabel">ระบบส่งรายงานอัตโนมัติ</label>
+          <select id="s-auto-report" class="sinput">
+            <option value="none">ไม่ส่ง</option>
+            <option value="daily" selected>รายวัน</option>
+            <option value="weekly">รายสัปดาห์</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- TAB 2: Staff Work Hours -->
+      <div id="spanel-2" class="spanel" style="display:none;">
+        <div style="margin-bottom:14px;font-size:13px;color:var(--muted,#94A3B8);">กำหนดเวลาเริ่ม–สิ้นสุดงานตามประเภทบุคลากร</div>
+
+        <% const staffTypes = [
+          { id:'doctor', label:'แพทย์', icon:'bi-person-badge' },
+          { id:'nurse', label:'พยาบาล', icon:'bi-heart-pulse' },
+          { id:'staff', label:'เจ้าหน้าที่ทั่วไป', icon:'bi-people' },
+          { id:'support', label:'บุคลากรสนับสนุน', icon:'bi-tools' }
+        ]; %>
+
+        <% staffTypes.forEach(function(st){ %>
+        <div style="background:var(--surface,#F8FAFC);border-radius:12px;padding:14px 16px;margin-bottom:10px;border:1px solid var(--border,#E2E8F0);">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <i class="bi <%= st.icon %>" style="color:#6366F1;font-size:16px;"></i>
+            <span style="font-size:13px;font-weight:600;"><%= st.label %></span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+            <div>
+              <label style="font-size:11px;color:var(--muted,#94A3B8);display:block;margin-bottom:4px;">เวลาเริ่ม</label>
+              <input type="time" id="s-<%= st.id %>-start" class="sinput" value="08:00">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted,#94A3B8);display:block;margin-bottom:4px;">เวลาสิ้นสุด</label>
+              <input type="time" id="s-<%= st.id %>-end" class="sinput" value="16:00">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--muted,#94A3B8);display:block;margin-bottom:4px;">OT เริ่มหลัง (ชม.)</label>
+              <input type="number" id="s-<%= st.id %>-ot" class="sinput" value="8" min="1" max="24">
+            </div>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+
+      <!-- TAB 3: Shift Types -->
+      <div id="spanel-3" class="spanel" style="display:none;">
+        <div style="margin-bottom:14px;font-size:13px;color:var(--muted,#94A3B8);">กำหนดช่วงเวลาและชื่อของแต่ละเวร</div>
+
+        <div id="shiftList">
+          <!-- rendered by JS -->
+        </div>
+
+        <button onclick="addShift()" style="
+          margin-top:8px; width:100%; padding:10px; border:2px dashed #C4B5FD;
+          border-radius:10px; background:none; color:#7C3AED; font-size:13px;
+          font-weight:600; cursor:pointer; transition:all .2s;">
+          <i class="bi bi-plus-circle"></i> เพิ่มประเภทเวร
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 28px;border-top:1px solid var(--border,#E2E8F0);">
+      <button onclick="closeSettings()" style="padding:9px 20px;border-radius:9px;border:1px solid var(--border,#E2E8F0);background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted,#94A3B8);">ยกเลิก</button>
+      <button onclick="saveSettings()" style="padding:9px 22px;border-radius:9px;border:none;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(99,102,241,.35);">
+        <i class="bi bi-check2-circle"></i> บันทึกการตั้งค่า
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes slideUp {
+  from { opacity:0; transform:translateY(20px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.stab {
+  padding:8px 16px; border:none; background:none; border-radius:8px 8px 0 0;
+  font-size:13px; font-weight:500; color:var(--muted,#94A3B8); cursor:pointer;
+  display:flex; align-items:center; gap:6px; border-bottom:3px solid transparent;
+  transition:all .2s;
+}
+.stab.active {
+  color:#6366F1; border-bottom-color:#6366F1; background:rgba(99,102,241,.07);
+}
+.stab:hover:not(.active) { background:var(--surface,#F8FAFC); }
+.sgroup { margin-bottom:18px; }
+.slabel {
+  display:block; font-size:13px; font-weight:600; color:var(--text,#1E293B);
+  margin-bottom:6px;
+}
+.sinput {
+  width:100%; padding:9px 12px; border:1px solid var(--border,#E2E8F0);
+  border-radius:9px; font-size:13px; background:var(--surface,#F8FAFC);
+  color:var(--text,#1E293B); outline:none; font-family:inherit;
+  transition:border-color .2s;
+}
+.sinput:focus { border-color:#6366F1; box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+.shift-row {
+  display:grid; grid-template-columns:1fr 130px 130px 36px;
+  gap:8px; align-items:center; background:var(--surface,#F8FAFC);
+  border-radius:10px; padding:12px 14px; margin-bottom:8px;
+  border:1px solid var(--border,#E2E8F0);
+}
+</style>
+
+<script>
+  /* =====================================================
+     SETTINGS  —  state & helpers
+     ===================================================== */
+  const SETTINGS_KEY = 'hospital_settings';
+
+  const DEFAULT_SETTINGS = {
+    workStart: '08:00', workEnd: '16:00', lateMin: 31,
+    workDays: ['mon','tue','wed','thu','fri'],
+    autoReport: 'daily',
+    staffHours: {
+      doctor:  { start:'08:00', end:'16:00', ot:8 },
+      nurse:   { start:'07:00', end:'15:00', ot:8 },
+      staff:   { start:'08:00', end:'16:00', ot:8 },
+      support: { start:'08:00', end:'16:00', ot:8 }
+    },
+    shifts: [
+      { name:'เช้า',  start:'08:00', end:'16:00', color:'#F59E0B' },
+      { name:'บ่าย',  start:'16:00', end:'24:00', color:'#3B82F6' },
+      { name:'ดึก',   start:'00:00', end:'08:00', color:'#7C3AED' }
+    ]
+  };
+
+  function loadSettings() {
+    try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || DEFAULT_SETTINGS; }
+    catch { return DEFAULT_SETTINGS; }
+  }
+
+  function openSettings() {
+    const s = loadSettings();
+    // Tab 1
+    document.getElementById('s-work-start').value  = s.workStart;
+    document.getElementById('s-work-end').value    = s.workEnd;
+    document.getElementById('s-late-min').value    = s.lateMin;
+    document.getElementById('s-auto-report').value = s.autoReport;
+    ['sun','mon','tue','wed','thu','fri','sat'].forEach(d => {
+      const el = document.getElementById('s-day-' + d);
+      if (el) el.checked = s.workDays.includes(d);
+    });
+    // Tab 2
+    ['doctor','nurse','staff','support'].forEach(t => {
+      const h = s.staffHours[t] || {};
+      if (document.getElementById('s-' + t + '-start'))
+        document.getElementById('s-' + t + '-start').value = h.start || '08:00';
+      if (document.getElementById('s-' + t + '-end'))
+        document.getElementById('s-' + t + '-end').value = h.end || '16:00';
+      if (document.getElementById('s-' + t + '-ot'))
+        document.getElementById('s-' + t + '-ot').value = h.ot || 8;
+    });
+    // Tab 3 — render shift rows
+    renderShiftList(s.shifts);
+    switchSettingsTab(1);
+    const modal = document.getElementById('settingsModal');
+    modal.style.display = 'flex';
+  }
+
+  function closeSettings() {
+    document.getElementById('settingsModal').style.display = 'none';
+  }
+
+  function switchSettingsTab(n) {
+    [1,2,3].forEach(i => {
+      document.getElementById('stab-' + i).classList.toggle('active', i === n);
+      document.getElementById('spanel-' + i).style.display = i === n ? 'block' : 'none';
+    });
+  }
+
+  /* --- Shift rows --- */
+  let _shifts = [];
+
+  function renderShiftList(shifts) {
+    _shifts = shifts ? JSON.parse(JSON.stringify(shifts)) : [];
+    const el = document.getElementById('shiftList');
+    el.innerHTML = _shifts.map((sh, i) => `
+      <div class="shift-row">
+        <input type="text" class="sinput" value="${sh.name}" placeholder="ชื่อเวร"
+          onchange="_shifts[${i}].name=this.value" style="min-width:0;">
+        <input type="time" class="sinput" value="${sh.start}"
+          onchange="_shifts[${i}].start=this.value">
+        <input type="time" class="sinput" value="${sh.end}"
+          onchange="_shifts[${i}].end=this.value">
+        <button onclick="removeShift(${i})" style="border:none;background:#FEE2E2;color:#EF4444;border-radius:7px;width:34px;height:34px;cursor:pointer;font-size:16px;">✕</button>
+      </div>
+    `).join('');
+  }
+
+  function addShift() {
+    _shifts.push({ name:'เวรใหม่', start:'00:00', end:'08:00', color:'#6366F1' });
+    renderShiftList(_shifts);
+  }
+
+  function removeShift(i) {
+    _shifts.splice(i, 1);
+    renderShiftList(_shifts);
+  }
+
+  function saveSettings() {
+    const days = ['sun','mon','tue','wed','thu','fri','sat'].filter(d => {
+      const el = document.getElementById('s-day-' + d);
+      return el && el.checked;
+    });
+    const staffHours = {};
+    ['doctor','nurse','staff','support'].forEach(t => {
+      staffHours[t] = {
+        start: document.getElementById('s-' + t + '-start')?.value || '08:00',
+        end:   document.getElementById('s-' + t + '-end')?.value   || '16:00',
+        ot:    parseInt(document.getElementById('s-' + t + '-ot')?.value || 8)
+      };
+    });
+    const settings = {
+      workStart:   document.getElementById('s-work-start').value,
+      workEnd:     document.getElementById('s-work-end').value,
+      lateMin:     parseInt(document.getElementById('s-late-min').value),
+      workDays:    days,
+      autoReport:  document.getElementById('s-auto-report').value,
+      staffHours,
+      shifts:      _shifts
+    };
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+
+    // Flash save button
+    const btn = event.currentTarget;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-check-lg"></i> บันทึกแล้ว!';
+    btn.style.background = 'linear-gradient(135deg,#10B981,#059669)';
+    setTimeout(() => {
+      btn.innerHTML = orig;
+      btn.style.background = 'linear-gradient(135deg,#6366F1,#8B5CF6)';
+      closeSettings();
+    }, 1200);
+  }
+
+  // Close on backdrop click
+  document.getElementById('settingsModal').addEventListener('click', function(e) {
+    if (e.target === this) closeSettings();
+  });
+
+  init();
+</script>
+
+</body>
+
+</html>
