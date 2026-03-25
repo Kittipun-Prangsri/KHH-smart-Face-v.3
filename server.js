@@ -153,6 +153,50 @@ app.get('/api/data', async (req, res) => {
   }
 });
 
+// API Endpoints for Shift Scheduling
+const SCHEDULE_FILE = path.join(__dirname, 'data', 'schedule.json');
+
+app.get('/api/schedule', (req, res) => {
+  try {
+    if (fs.existsSync(SCHEDULE_FILE)) {
+      const data = fs.readFileSync(SCHEDULE_FILE, 'utf8');
+      res.json(JSON.parse(data));
+    } else {
+      res.json([]);
+    }
+  } catch (err) {
+    console.error('Error reading schedule.json', err);
+    res.status(500).json([]);
+  }
+});
+
+app.post('/api/schedule', (req, res) => {
+  try {
+    const { emp_id, shift } = req.body;
+    let schedule = [];
+    if (fs.existsSync(SCHEDULE_FILE)) {
+      schedule = JSON.parse(fs.readFileSync(SCHEDULE_FILE, 'utf8'));
+    }
+    
+    // update or remove
+    schedule = schedule.filter(s => s.emp_id !== emp_id);
+    if (shift && shift !== 'EMPTY') {
+      schedule.push({ emp_id, shift });
+    }
+    
+    // ensure dir
+    if (!fs.existsSync(path.join(__dirname, 'data'))) {
+      fs.mkdirSync(path.join(__dirname, 'data'));
+    }
+    fs.writeFileSync(SCHEDULE_FILE, JSON.stringify(schedule, null, 2), 'utf8');
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error writing schedule.json', err);
+    res.status(500).json({ error: 'Failed to write' });
+  }
+});
+
 // API Endpoint to update data (mock)
 app.post('/api/data', (req, res) => {
   const newDb = req.body;

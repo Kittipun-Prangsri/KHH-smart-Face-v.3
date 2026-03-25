@@ -14,12 +14,754 @@
 <%- include("components/sidebar") %>
 <div class="main">
 <%- include("components/topbar") %>
-  <div class="page">
-    <div class="table-card page-empty">
-      <i class="bi bi-tools" style="font-size:48px;color:var(--border);margin-bottom:16px;display:block;"></i>
-      <h3 style="color:var(--primary);font-weight:700;">ตารางเวร</h3>
-      <p>ระบบกำลังอยู่ในระหว่างการพัฒนา</p>
+  <div class="page" style="padding: 0; ">
+<div class="shift-app-wrap">
+<style>
+
+.shift-app-wrap *, .shift-app-wrap *::before, .shift-app-wrap *::after {box-sizing:border-box;margin:0;padding:0}
+.shift-app-wrap {
+  --bg: var(--surface, #F1F5F9);
+  --bg2: var(--card, #ffffff);
+  --bg3: #F8FAFC;
+  --bg4: #E2E8F0;
+  --border: var(--border, #E2E8F0);
+  --border2: #CBD5E1;
+  --text: var(--text, #0F172A);
+  --text2: #475569;
+  --text3: var(--muted, #64748B);
+  --accent: var(--accent, #00B8A9);
+  --accent2: #0B6E6E;
+  --morning: var(--morning, #F59E0B);
+  --afternoon: var(--afternoon, #3B82F6);
+  --night: var(--night, #7C3AED);
+  --success: #10B981;
+  --danger: #EF4444;
+  --warn: #F59E0B;
+  --font:'IBM Plex Sans Thai',sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+}
+.shift-app-wrap {background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.6}
+.shift-app-wrap {display:flex;min-height:100vh}
+
+/* Sidebar */
+.shift-app-wrap .sidebar{width:220px;min-width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:0}
+.shift-app-wrap .sidebar-logo{padding:28px 24px 20px;border-bottom:1px solid var(--border)}
+.shift-app-wrap .logo-mark{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;margin-bottom:4px}
+.shift-app-wrap .logo-title{font-size:17px;font-weight:600;letter-spacing:-.02em}
+.shift-app-wrap .logo-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.shift-app-wrap .sidebar-nav{padding:16px 12px;flex:1}
+.shift-app-wrap .nav-label{font-size:10px;font-weight:500;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;padding:0 12px;margin:16px 0 6px}
+.shift-app-wrap .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:14px;color:var(--text2);transition:all .15s;margin-bottom:1px;border:1px solid transparent;user-select:none}
+.shift-app-wrap .nav-item:hover{background:var(--bg3);color:var(--text)}
+.shift-app-wrap .nav-item.active{background:var(--bg4);color:var(--text);border-color:var(--border)}
+.shift-app-wrap .nav-icon{width:16px;height:16px;opacity:.7}
+.shift-app-wrap .sidebar-footer{padding:16px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--text3)}
+.shift-app-wrap .status-dot{display:inline-block;width:6px;height:6px;background:var(--success);border-radius:50%;margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Main */
+.shift-app-wrap .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.shift-app-wrap .topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.shift-app-wrap .topbar-title{font-size:16px;font-weight:600}
+.shift-app-wrap .topbar-actions{display:flex;gap:10px;align-items:center}
+.shift-app-wrap .content{flex:1;padding:28px;overflow-y:auto}
+
+/* Buttons */
+.shift-app-wrap .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;border:1px solid transparent;font-family:var(--font)}
+.shift-app-wrap .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent2)}
+.shift-app-wrap .btn-primary:hover{background:#3d6ef0;filter:brightness(1.1)}
+.shift-app-wrap .btn-ghost{background:transparent;color:var(--text2);border-color:var(--border)}
+.shift-app-wrap .btn-ghost:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
+.shift-app-wrap .btn-danger{background:transparent;color:var(--danger);border-color:var(--danger)}
+.shift-app-wrap .btn-danger:hover{background:rgba(255,95,95,.1)}
+.shift-app-wrap .btn-sm{padding:5px 12px;font-size:12px}
+.shift-app-wrap .btn-icon{padding:7px;border-radius:7px}
+
+/* Stats row */
+.shift-app-wrap .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.shift-app-wrap .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px 20px}
+.shift-app-wrap .stat-label{font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.shift-app-wrap .stat-value{font-size:26px;font-weight:600;font-family:var(--mono);letter-spacing:-.02em}
+.shift-app-wrap .stat-sub{font-size:12px;color:var(--text3);margin-top:4px}
+.shift-app-wrap .stat-accent{color:var(--accent)}
+.shift-app-wrap .stat-morning{color:var(--morning)}
+.shift-app-wrap .stat-afternoon{color:var(--afternoon)}
+.shift-app-wrap .stat-night{color:var(--night)}
+
+/* Calendar */
+.shift-app-wrap .calendar-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.shift-app-wrap .cal-title{font-size:18px;font-weight:600}
+.shift-app-wrap .cal-nav{display:flex;gap:6px}
+.shift-app-wrap .week-grid{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.shift-app-wrap .week-header{display:grid;grid-template-columns:80px repeat(7,1fr);border-bottom:1px solid var(--border)}
+.shift-app-wrap .week-header-cell{padding:12px 8px;font-size:11px;font-weight:500;color:var(--text3);text-align:center;letter-spacing:.06em;text-transform:uppercase}
+.shift-app-wrap .week-header-cell.today{color:var(--accent)}
+.shift-app-wrap .shift-row{display:grid;grid-template-columns:80px repeat(7,1fr);border-bottom:1px solid var(--border)}
+.shift-app-wrap .shift-row:last-child{border-bottom:none}
+.shift-app-wrap .shift-label{padding:14px 12px;font-size:12px;font-weight:500;color:var(--text2);display:flex;align-items:center;gap:8px;border-right:1px solid var(--border)}
+.shift-app-wrap .shift-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.shift-app-wrap .shift-cell{padding:8px 6px;border-right:1px solid var(--border);min-height:70px;display:flex;flex-direction:column;gap:4px}
+.shift-app-wrap .shift-cell:last-child{border-right:none}
+.shift-app-wrap .emp-chip{background:var(--bg4);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;transition:all .15s;border:1px solid var(--border);display:flex;align-items:center;gap:5px}
+.shift-app-wrap .emp-chip:hover{border-color:var(--border2);background:var(--bg3)}
+.shift-app-wrap .emp-chip .avatar{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;flex-shrink:0}
+.shift-app-wrap .add-slot{border:1px dashed var(--border);border-radius:6px;padding:4px;font-size:10px;color:var(--text3);text-align:center;cursor:pointer;transition:all .15s}
+.shift-app-wrap .add-slot:hover{border-color:var(--accent);color:var(--accent);background:rgba(79,124,255,.05)}
+
+/* Team tab */
+.shift-app-wrap .team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.shift-app-wrap .emp-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;cursor:pointer;transition:all .15s}
+.shift-app-wrap .emp-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.shift-app-wrap .emp-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.shift-app-wrap .emp-avatar{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;flex-shrink:0}
+.shift-app-wrap .emp-name{font-size:15px;font-weight:600}
+.shift-app-wrap .emp-no{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.shift-app-wrap .emp-meta{display:flex;gap:8px;flex-wrap:wrap}
+.shift-app-wrap .tag{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid}
+.shift-app-wrap .tag-team{color:var(--accent);border-color:rgba(79,124,255,.3);background:rgba(79,124,255,.08)}
+.shift-app-wrap .tag-shift{border-color:var(--border)}
+.shift-app-wrap .tag-morning{color:var(--morning);border-color:rgba(255,179,71,.3);background:rgba(255,179,71,.08)}
+.shift-app-wrap .tag-afternoon{color:var(--afternoon);border-color:rgba(79,195,247,.3);background:rgba(79,195,247,.08)}
+.shift-app-wrap .tag-empty{color:var(--text3);border-color:rgba(100,116,139,.3);background:rgba(100,116,139,.08)}
+.shift-app-wrap .tag-night{color:var(--night);border-color:rgba(155,142,247,.3);background:rgba(155,142,247,.08)}
+.shift-app-wrap .emp-stats{border-top:1px solid var(--border);margin-top:12px;padding-top:12px;display:flex;gap:16px}
+.shift-app-wrap .mini-stat{font-size:11px;color:var(--text3)}
+.shift-app-wrap .mini-stat strong{color:var(--text);font-weight:500;display:block;font-size:15px;font-family:var(--mono)}
+
+/* Modal */
+.shift-app-wrap .overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .2s}
+.shift-app-wrap .overlay.open{opacity:1;pointer-events:all}
+.shift-app-wrap .shift-modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:28px;width:460px;max-width:95vw;transform:translateY(16px);transition:transform .2s}
+.shift-app-wrap .overlay.open .shift-modal{transform:none}
+.shift-app-wrap .modal-title{font-size:17px;font-weight:600;margin-bottom:20px}
+.shift-app-wrap .form-group{margin-bottom:16px}
+.shift-app-wrap .form-label{font-size:12px;color:var(--text2);margin-bottom:6px;display:block;font-weight:500}
+.shift-app-wrap .form-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;font-family:var(--font);transition:border .15s;outline:none}
+.shift-app-wrap .form-input:focus{border-color:var(--accent)}
+.shift-app-wrap .form-input::placeholder{color:var(--text3)}
+.shift-app-wrap .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.shift-app-wrap .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px}
+
+/* Notification area */
+.shift-app-wrap .notif-list{display:flex;flex-direction:column;gap:10px;max-height:400px;overflow-y:auto}
+.shift-app-wrap .notif-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;gap:12px}
+.shift-app-wrap .notif-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
+.shift-app-wrap .notif-body{flex:1}
+.shift-app-wrap .notif-title{font-size:13px;font-weight:500;margin-bottom:2px}
+.shift-app-wrap .notif-desc{font-size:12px;color:var(--text2)}
+.shift-app-wrap .notif-time{font-size:11px;color:var(--text3);font-family:var(--mono)}
+
+/* Section header */
+.shift-app-wrap .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.shift-app-wrap .section-title{font-size:16px;font-weight:600}
+
+/* Toast */
+.shift-app-wrap .toast{position:fixed;bottom:24px;right:24px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:12px 18px;font-size:13px;z-index:200;transform:translateY(80px);opacity:0;transition:all .25s;display:flex;align-items:center;gap:10px}
+.shift-app-wrap .toast.show{transform:none;opacity:1}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+/* Animations */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.shift-app-wrap .fade-in{animation:fadeIn .3s ease both}
+
+.shift-app-wrap {
+  position: relative;
+  display: flex;
+  height: calc(100vh - 64px); 
+  width: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+</style>
+
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">ShiftOS</div>
+    <div class="logo-title">ระบบตารางเวร</div>
+    <div class="logo-sub">3 กะ · 24 ชั่วโมง</div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-label">หลัก</div>
+    <div class="nav-item active" onclick="showTab('calendar')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="2" width="14" height="13" rx="2"/><line x1="5" y1="1" x2="5" y2="4"/><line x1="11" y1="1" x2="11" y2="4"/><line x1="1" y1="7" x2="15" y2="7"/></svg>
+      ตารางเวร
     </div>
+    <div class="nav-item" onclick="showTab('team')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="6" cy="5" r="3"/><path d="M1 14c0-3 2.3-5 5-5"/><circle cx="12" cy="7" r="2.5"/><path d="M9.5 14c0-2 1.2-3.5 2.5-3.5s2.5 1.5 2.5 3.5"/></svg>
+      ทีมพนักงาน
+    </div>
+    <div class="nav-item" onclick="showTab('notify')">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1a5 5 0 0 1 5 5v2l1 2H2l1-2V6a5 5 0 0 1 5-5z"/><path d="M6.5 13a1.5 1.5 0 0 0 3 0"/></svg>
+      แจ้งเตือน
+      <span id="notif-badge" style="margin-left:auto;background:var(--accent);color:#fff;font-size:10px;padding:1px 6px;border-radius:20px;font-family:var(--mono)">0</span>
+    </div>
+    <div class="nav-label">Export</div>
+    <div class="nav-item" onclick="exportExcel()">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="14" height="14" rx="2"/><path d="M5 5l6 6M11 5l-6 6"/></svg>
+      Excel (.xlsx)
+    </div>
+    <div class="nav-item" onclick="exportPDF()">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 1h7l3 3v11H3V1z"/><path d="M10 1v3h3"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="9" y2="11"/></svg>
+      PDF
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <span class="status-dot"></span>API เชื่อมต่อแล้ว
+  </div>
+</nav>
+
+<!-- Main Content -->
+<div class="main">
+  <div class="topbar">
+    <div style="display:flex; align-items:center; gap: 15px;">
+      <a href="/" class="btn btn-ghost btn-sm" style="text-decoration: none;"><i class="bi bi-arrow-left"></i> กลับหน้าหลัก</a>
+      <div class="topbar-title" id="topbar-title" style="margin: 0;">ตารางเวรประจำสัปดาห์</div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" onclick="goToday(); showTab('calendar')">สัปดาห์นี้</button>
+      <button class="btn btn-primary btn-sm" onclick="openAddEmpModal()">+ เพิ่มพนักงาน</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- TAB: CALENDAR -->
+    <div id="tab-calendar" class="fade-in">
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">พนักงานทั้งหมด</div>
+          <div class="stat-value stat-accent" id="stat-total">12</div>
+          <div class="stat-sub">คน ใช้งานอยู่</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">กะเช้า (06-14)</div>
+          <div class="stat-value stat-morning" id="stat-morning">4</div>
+          <div class="stat-sub">คนต่อวัน</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">กะบ่าย (14-22)</div>
+          <div class="stat-value stat-afternoon" id="stat-afternoon">4</div>
+          <div class="stat-sub">คนต่อวัน</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">กะดึก (22-06)</div>
+          <div class="stat-value stat-night" id="stat-night">4</div>
+          <div class="stat-sub">คนต่อวัน</div>
+        </div>
+      </div>
+
+      <!-- Calendar -->
+      <div class="calendar-header">
+        <div class="cal-title" id="cal-title">กุมภาพันธ์ 2026</div>
+        <div class="cal-nav">
+          <button class="btn btn-ghost btn-icon" onclick="prevWeek()">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 2L4 7l5 5"/></svg>
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="goToday()">วันนี้</button>
+          <button class="btn btn-ghost btn-icon" onclick="nextWeek()">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 2l5 5-5 5"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="week-grid" id="week-grid">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- TAB: TEAM -->
+    <div id="tab-team" style="display:none" class="fade-in">
+      <div class="section-header">
+        <div class="section-title">ทีมพนักงาน</div>
+        <button class="btn btn-primary btn-sm" onclick="openAddEmpModal()">+ เพิ่มพนักงาน</button>
+      </div>
+      <div class="team-grid" id="team-grid">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- TAB: NOTIFY -->
+    <div id="tab-notify" style="display:none" class="fade-in">
+      <div class="section-header">
+        <div class="section-title">การแจ้งเตือน</div>
+      <button class="btn btn-ghost btn-sm" onclick="markAllRead()">ทำเครื่องหมายอ่านแล้ว</button>
+    </div>
+      <div class="notif-list" id="notif-list">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal: Add Employee -->
+<div class="overlay" id="shift-modal-overlay" onclick="closeModal(event)">
+  <div class="shift-modal">
+    <div class="modal-title" id="shift-modal-title">เพิ่มพนักงานใหม่</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">ชื่อ-สกุล *</label>
+        <input class="form-input" id="f-name" placeholder="สมชาย ใจดี"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">รหัสพนักงาน</label>
+        <input class="form-input" id="f-no" placeholder="EMP001" style="font-family:var(--mono)"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">ทีม / แผนก</label>
+        <input class="form-input" id="f-team" placeholder="ทีม A"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">กะเริ่มต้น</label>
+        <select class="form-input" id="f-shift">
+          <option value="MORNING">เช้า (06:00-14:00)</option>
+          <option value="AFTERNOON">บ่าย (14:00-22:00)</option>
+          <option value="NIGHT">ดึก (22:00-06:00)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">อีเมล</label>
+        <input class="form-input" id="f-email" placeholder="name@company.com" type="email"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">เบอร์โทร</label>
+        <input class="form-input" id="f-phone" placeholder="0812345678"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="btn-delete" onclick="deleteEmployee()" style="display:none; margin-right:auto;">ลบข้อมูล</button>
+      <button class="btn btn-ghost" onclick="closeModalDirect()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveEmployee()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ DATA ============
+const SHIFTS = [
+  { id:1, type:'MORNING',   label:'กะเช้า',  time:'06:00-14:00', color:'var(--morning)',  dot:'#ffb347' },
+  { id:2, type:'AFTERNOON', label:'กะบ่าย', time:'14:00-22:00', color:'var(--afternoon)', dot:'#4fc3f7' },
+  { id:3, type:'NIGHT',     label:'กะดึก',   time:'22:00-06:00', color:'var(--night)',    dot:'#9b8ef7' },
+];
+
+const DAYS_TH = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+const MONTHS_TH = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+  'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+const AVATAR_COLORS = [
+  {bg:'rgba(79,124,255,.18)',color:'#6e9fff'},
+  {bg:'rgba(255,179,71,.18)',color:'#ffb347'},
+  {bg:'rgba(79,195,247,.18)',color:'#4fc3f7'},
+  {bg:'rgba(155,142,247,.18)',color:'#9b8ef7'},
+  {bg:'rgba(61,214,140,.18)',color:'#3dd68c'},
+  {bg:'rgba(255,95,95,.18)',color:'#ff5f5f'},
+];
+
+let employees = [];
+
+let nextId = 10;
+let currentWeekOffset = 0;
+
+const NOTIFICATIONS = [
+  { id:1, type:'swap',  title:'คำขอสลับเวร', desc:'สมชาย ใจดี ขอสลับเวรกับ วิภา รักงาน (25 มี.ค.)', time:'5 นาทีที่แล้ว',  read:false, icon:'🔄' },
+  { id:2, type:'alert', title:'พนักงานขาดเวร', desc:'กาญจนา แก้ว ยังไม่ยืนยันเวรวันพุธ',          time:'1 ชั่วโมงที่แล้ว', read:false, icon:'⚠️' },
+  { id:3, type:'auto',  title:'สลับเวรอัตโนมัติ', desc:'ระบบจัดตารางเวรสัปดาห์ถัดไปเรียบร้อยแล้ว', time:'เมื่อวาน',           read:false, icon:'✅' },
+  { id:4, type:'info',  title:'Export สำเร็จ', desc:'ดาวน์โหลดตารางเวรเดือนมีนาคม (.xlsx)',         time:'2 วันที่แล้ว',       read:true,  icon:'📊' },
+];
+
+// ============ HELPERS ============
+function getWeekDates(offset=0) {
+  const today = new Date();
+  const dow = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - dow + 1 + offset*7);
+  return Array.from({length:7}, (_,i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate()+i);
+    return d;
+  });
+}
+
+function getInitials(name) {
+  const parts = name.split(' ');
+  return parts.length >= 2 ? (parts[0][0]+parts[1][0]) : name.substring(0,2);
+}
+
+function getAvatarStyle(id) {
+  const c = AVATAR_COLORS[(id-1) % AVATAR_COLORS.length];
+  return `background:${c.bg};color:${c.color}`;
+}
+
+function getShiftTag(shiftType) {
+  const map = { MORNING:'tag-morning', AFTERNOON:'tag-afternoon', NIGHT:'tag-night' };
+  const label = { MORNING:'เช้า', AFTERNOON:'บ่าย', NIGHT:'ดึก' };
+  return `<span class="tag ${map[shiftType]||''}">${label[shiftType]||shiftType}</span>`;
+}
+
+function isToday(date) {
+  const t = new Date();
+  return date.getDate()===t.getDate() && date.getMonth()===t.getMonth() && date.getFullYear()===t.getFullYear();
+}
+
+// ============ RENDER CALENDAR ============
+function renderCalendar() {
+  const dates = getWeekDates(currentWeekOffset);
+  const month = MONTHS_TH[dates[0].getMonth()];
+  const year = dates[0].getFullYear() + 543;
+  document.getElementById('cal-title').textContent = `${month} ${year}`;
+
+  // Assign employees to shifts for each day (round-robin)
+  const empByShift = {
+    MORNING:   employees.filter(e=>e.shift==='MORNING'),
+    AFTERNOON: employees.filter(e=>e.shift==='AFTERNOON'),
+    NIGHT:     employees.filter(e=>e.shift==='NIGHT'),
+  };
+
+  let html = `<div class="week-header">
+    <div class="week-header-cell"></div>`;
+  dates.forEach((d,i) => {
+    const tod = isToday(d);
+    html += `<div class="week-header-cell${tod?' today':''}">
+      ${DAYS_TH[i===6?0:i+1]}<br>
+      <span style="font-size:14px;font-weight:${tod?600:400};color:${tod?'var(--accent)':'var(--text)'}">${d.getDate()}</span>
+    </div>`;
+  });
+  html += '</div>';
+
+  SHIFTS.forEach(shift => {
+    const emps = empByShift[shift.type] || [];
+    html += `<div class="shift-row">
+      <div class="shift-label" style="color:${shift.color}">
+        <span class="shift-dot" style="background:${shift.dot}"></span>
+        <span>${shift.label}<br><span style="font-size:10px;color:var(--text3);font-family:var(--mono)">${shift.time}</span></span>
+      </div>`;
+
+    dates.forEach((_,dayIdx) => {
+      html += `<div class="shift-cell">`;
+      emps.forEach((emp,ei) => {
+        const rotated = emps[(ei + dayIdx) % emps.length];
+        if (!rotated) return;
+        html += `<div class="emp-chip" title="${rotated.name} · ${rotated.team}" onclick="showEmpDetail(${rotated.id})">
+          <span class="avatar" style="${getAvatarStyle(rotated.id)}">${getInitials(rotated.name)}</span>
+          <span style="color:var(--text2)">${rotated.name.split(' ')[0]}</span>
+        </div>`;
+      });
+      html += `<div class="add-slot" onclick="openAddSlot()" title="เพิ่มพนักงาน">+</div>`;
+      html += `</div>`;
+    });
+
+    html += `</div>`;
+  });
+
+  document.getElementById('week-grid').innerHTML = html;
+  updateStats();
+}
+
+function updateStats() {
+  document.getElementById('stat-total').textContent = employees.length;
+  document.getElementById('stat-morning').textContent = employees.filter(e=>e.shift==='MORNING').length;
+  document.getElementById('stat-afternoon').textContent = employees.filter(e=>e.shift==='AFTERNOON').length;
+  document.getElementById('stat-night').textContent = employees.filter(e=>e.shift==='NIGHT').length;
+}
+
+// ============ RENDER TEAM ============
+function renderTeam() {
+  const html = employees.map(emp => {
+    const shiftHours = emp.shift==='MORNING'||emp.shift==='AFTERNOON' ? 8 : 8;
+    return `<div class="emp-card" onclick="showEmpDetail(${emp.id})">
+      <div class="emp-header">
+        <div class="emp-avatar" style="${getAvatarStyle(emp.id)}">${getInitials(emp.name)}</div>
+        <div>
+          <div class="emp-name">${emp.name}</div>
+          <div class="emp-no">${emp.no}</div>
+        </div>
+      </div>
+      <div class="emp-meta">
+        <span class="tag tag-team">${emp.team}</span>
+        ${getShiftTag(emp.shift)}
+        <span class="tag" style="color:var(--text2);border-color:var(--border)">${emp.phone}</span>
+      </div>
+      <div class="emp-stats">
+        <div class="mini-stat"><strong>40</strong>ชม./สัปดาห์</div>
+        <div class="mini-stat"><strong>5</strong>วัน/สัปดาห์</div>
+        <div class="mini-stat"><strong>${emp.email.split('@')[0]}</strong>อีเมล</div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('team-grid').innerHTML = html;
+}
+
+// ============ RENDER NOTIFICATIONS ============
+function renderNotifications() {
+  const html = NOTIFICATIONS.map(n => `
+    <div class="notif-item" onclick="markRead(${n.id})" style="${n.read?'opacity:.6; cursor:default':'cursor:pointer'}">
+      <div class="notif-icon" style="background:var(--bg4)">${n.icon}</div>
+      <div class="notif-body">
+        <div class="notif-title">${n.title}${!n.read?'<span style="display:inline-block;width:6px;height:6px;background:var(--accent);border-radius:50%;margin-left:8px;vertical-align:middle"></span>':''}</div>
+        <div class="notif-desc">${n.desc}</div>
+      </div>
+      <div class="notif-time">${n.time}</div>
+    </div>`).join('');
+  document.getElementById('notif-list').innerHTML = html;
+  updateNotifBadge();
+}
+
+function updateNotifBadge() {
+  const unread = NOTIFICATIONS.filter(n => !n.read).length;
+  const badge = document.getElementById('notif-badge');
+  badge.textContent = unread;
+  badge.style.display = unread > 0 ? 'inline-block' : 'none';
+}
+
+function markRead(id) {
+  const n = NOTIFICATIONS.find(x => x.id === id);
+  if (n) {
+    n.read = true;
+    renderNotifications();
+  }
+}
+
+function markAllRead() {
+  NOTIFICATIONS.forEach(n => n.read = true);
+  renderNotifications();
+  showToast('✅ อ่านการแจ้งเตือนทั้งหมดแล้ว');
+}
+
+function addNotification(type, title, desc) {
+  const icons = { info: 'ℹ️', success: '✅', alert: '⚠️', swap: '🔄' };
+  NOTIFICATIONS.unshift({
+    id: Date.now(),
+    type,
+    title,
+    desc,
+    time: 'เมื่อครู่',
+    read: false,
+    icon: icons[type] || '🔔'
+  });
+  renderNotifications();
+}
+
+// ============ TABS ============
+function showTab(tab) {
+  ['calendar','team','notify'].forEach(t => {
+    const el = document.getElementById('tab-'+t);
+    el.style.display = t===tab ? 'block' : 'none';
+    el.classList.remove('fade-in');
+    if (t===tab) setTimeout(()=>el.classList.add('fade-in'),10);
+  });
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const titles = {calendar:'ตารางเวรประจำสัปดาห์', team:'ทีมพนักงานทั้งหมด', notify:'การแจ้งเตือน'};
+  document.getElementById('topbar-title').textContent = titles[tab] || '';
+
+  const navItems = document.querySelectorAll('.nav-item');
+  const tabIdx = {calendar:0,team:1,notify:2};
+  if (tabIdx[tab] !== undefined) navItems[tabIdx[tab]].classList.add('active');
+
+  if (tab==='team') renderTeam();
+  if (tab==='notify') renderNotifications();
+}
+
+// ============ WEEK NAV ============
+function prevWeek() { currentWeekOffset--; renderCalendar(); }
+function nextWeek() { currentWeekOffset++; renderCalendar(); }
+function goToday()  { currentWeekOffset=0; renderCalendar(); }
+
+// ============ MODAL ============
+
+function closeModalDirect() { document.getElementById('shift-modal-overlay').classList.remove('open'); }
+function closeModal(e) { if(e.target===document.getElementById('shift-modal-overlay')) closeModalDirect(); }
+
+function openAddSlot() { openAddEmpModal(); }
+
+let editId = null;
+
+function openAddEmpModal() {
+  editId = null;
+  document.getElementById('shift-modal-title').textContent = 'เพิ่มพนักงาน (ตารางเวร)';
+  ['name','no','team','email','phone'].forEach(f=>document.getElementById('f-'+f).value='');
+  document.getElementById('f-shift').value='MORNING';
+  document.getElementById('btn-delete').style.display = 'none';
+  document.getElementById('shift-modal-overlay').classList.add('open');
+}
+
+function showEmpDetail(id) {
+  const emp = employees.find(e=>e.id===id);
+  if (!emp) return;
+  editId = id;
+  document.getElementById('shift-modal-title').textContent = 'แก้ไขตารางเวร';
+  document.getElementById('f-name').value = emp.name;
+  document.getElementById('f-no').value = emp.no;
+  document.getElementById('f-team').value = emp.team;
+  document.getElementById('f-shift').value = emp.shift || 'EMPTY';
+  document.getElementById('f-email').value = emp.email;
+  document.getElementById('f-phone').value = emp.phone;
+  
+  document.getElementById('btn-delete').style.display = 'inline-flex';
+  document.getElementById('shift-modal-overlay').classList.add('open');
+}
+
+async function saveEmployee() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { showToast('⚠️ กรุณากรอกชื่อพนักงาน'); return; }
+  
+  let targetEmp;
+  if (editId) {
+    targetEmp = employees.find(e=>e.id===editId);
+    if (targetEmp) {
+      targetEmp.name = name;
+      targetEmp.no = document.getElementById('f-no').value;
+      targetEmp.team = document.getElementById('f-team').value;
+      targetEmp.shift = document.getElementById('f-shift').value;
+      targetEmp.email = document.getElementById('f-email').value;
+      targetEmp.phone = document.getElementById('f-phone').value;
+    }
+  } else {
+    // Determine max ID
+    const maxId = employees.length > 0 ? Math.max(...employees.map(e => e.id)) : 0;
+    targetEmp = {
+      id: maxId + 1,
+      real_id: document.getElementById('f-no').value,
+      name,
+      no: document.getElementById('f-no').value,
+      team: document.getElementById('f-team').value,
+      shift: document.getElementById('f-shift').value,
+      email: document.getElementById('f-email').value,
+      phone: document.getElementById('f-phone').value,
+    };
+    employees.push(targetEmp);
+  }
+  
+  // Save to backend
+  try {
+    await fetch('/api/schedule', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emp_id: targetEmp.real_id || targetEmp.id, shift: targetEmp.shift })
+    });
+    showToast('✅ บันทึกข้อมูล ' + name + ' เรียบร้อยแล้ว');
+    addNotification('success', editId ? 'อัปเดตข้อมูลพนักงาน' : 'เพิ่มพนักงานใหม่', `พนักงาน ${name} ถูกบันทึกลงในตารางเวรเรียบร้อยแล้ว`);
+  } catch (err) {
+    console.error(err);
+    showToast('⚠️ ไม่สามารถบันทึกลงฐานข้อมูลได้ (ระบบจำลองทำงานต่อได้)');
+  }
+  
+  closeModalDirect();
+  renderCalendar();
+  if (document.getElementById('tab-team').style.display !== 'none') renderTeam();
+  updateStats();
+}
+
+async function deleteEmployee() {
+  if (!editId) return;
+  if (confirm('คุณต้องการลบพนักงานคนนี้ออกจากตารางเวรใช่หรือไม่?')) {
+    const targetEmp = employees.find(e=>e.id===editId);
+    employees = employees.filter(e => e.id !== editId);
+    
+    // Remote delete backend
+    try {
+      await fetch('/api/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emp_id: targetEmp?.real_id || targetEmp?.id, shift: 'EMPTY' }) // Reset to empty acts as deleting the schedule
+      });
+      showToast('🗑 ลบข้อมูลเรียบร้อยแล้ว');
+      addNotification('alert', 'ลบข้อมูลพนักงาน', `พนักงาน ${targetEmp?.name} ถูกลบออกจากตารางเวรแล้ว`);
+    } catch (err) {}
+    
+    closeModalDirect();
+    renderCalendar();
+    if (document.getElementById('tab-team').style.display !== 'none') renderTeam();
+    updateStats();
+  }
+}
+
+function exportExcel() {
+  showToast('📊 กำลัง Export Excel… (เชื่อมต่อ /api/export/excel)');
+}
+function exportPDF() {
+  showToast('📄 กำลัง Export PDF… (เชื่อมต่อ /api/export/pdf)');
+}
+
+// ============ TOAST ============
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+// ============ INIT ============
+
+// ============ DATA FROM API ============
+async function loadEmployees() {
+  try {
+    const res = await fetch('/api/personnel');
+    const dbData = await res.json();
+    const personnelList = dbData.personnel || dbData || [];
+    
+    // Also fetch saved shift schedule assignments
+    let scheduleRes = await fetch('/api/schedule').catch(()=>null);
+    let scheduleData = [];
+    if (scheduleRes && scheduleRes.ok) {
+      scheduleData = await scheduleRes.json();
+    }
+    
+    employees = personnelList.map((p, idx) => {
+      const assigned = scheduleData.find(s => s.emp_id === p.FINGLE_ID || s.emp_id === p.ID);
+      return {
+        id: p.ID || idx + 1,
+        real_id: p.FINGLE_ID || p.ID, // for DB linking
+        name: p.HR_FNAME ? `${p.HR_FNAME} ${p.HR_LNAME}` : (p.Name || 'ไม่ระบุชื่อ'),
+        no: p.FINGLE_ID || p.EmployeeNo || '-',
+        team: p.HR_DEPARTMENT_NAME || p.Department || 'ไม่ระบุแผนก',
+        shift: assigned ? assigned.shift : 'EMPTY',
+        email: p.HR_EMAIL || ((p.FINGLE_ID||'emp') + '@khh.co.th'),
+        phone: p.HR_PHONE || p.Phone || '-'
+      };
+    });
+    
+    renderCalendar();
+    if (document.getElementById('tab-team').style.display !== 'none') renderTeam();
+    updateStats();
+  } catch (err) {
+    console.error('Error fetching personnel', err);
+    showToast('❌ ไม่สามารถดึงข้อมูลบุคลากรได้');
+  }
+}
+
+// override tag function for EMPTY
+function getShiftTagCustom(shiftType) {
+  const map = { MORNING:'tag-morning', AFTERNOON:'tag-afternoon', NIGHT:'tag-night', EMPTY:'tag-empty' };
+  const label = { MORNING:'เช้า', AFTERNOON:'บ่าย', NIGHT:'ดึก', EMPTY:'ว่าง' };
+  return `<span class="tag ${map[shiftType]||'tag-empty'}">${label[shiftType]||'ว่าง'}</span>`;
+}
+getShiftTag = getShiftTagCustom; // Override existing getShiftTag
+
+loadEmployees();
+updateNotifBadge(); // Initial badge count
+</script>
+
+</div>
+
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

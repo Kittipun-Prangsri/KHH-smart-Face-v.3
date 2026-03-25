@@ -7,3 +7,5 @@ check_service_tables.js
 test_live_local.js
 test_join.js
 package-lock.json
+test_db_conn.js
+data/
