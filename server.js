@@ -3,6 +3,8 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
+const session = require('express-session');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,6 +14,64 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Session Configuration
+app.use(session({
+  secret: 'khh-secret-key-2024',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+}));
+
+// Middleware to check authentication
+const checkAuth = (req, res, next) => {
+  if (req.session.user) {
+    res.locals.user = req.session.user; // Make user data available in EJS
+    next();
+  } else {
+    res.redirect('/login');
+  }
+};
+
+// Middleware to check admin role
+const checkAdmin = (req, res, next) => {
+  if (req.session.user && req.session.user.role === 'admin') {
+    next();
+  } else {
+    res.status(403).send('Access Denied: Admin role required');
+  }
+};
+
+// Auth Routes
+app.get('/login', (req, res) => {
+  if (req.session.user) return res.redirect('/');
+  res.render('login', { error: null });
+});
+
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const [rows] = await pool.query('SELECT * FROM users WHERE username = ?', [username]);
+    if (rows.length > 0) {
+      const user = rows[0];
+      const match = await bcrypt.compare(password, user.password);
+      if (match) {
+        req.session.user = { id: user.id, username: user.username, fullname: user.fullname, role: user.role };
+        return res.redirect('/');
+      }
+    }
+    res.render('login', { error: 'ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง' });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.render('login', { error: 'เกิดข้อผิดพลาดของระบบ' });
+  }
+});
+
+app.get('/logout', (req, res) => {
+  req.session.destroy();
+  res.redirect('/login');
+});
 
 // MySQL Connection Pool (hospital_db)
 const pool = mysql.createPool({
@@ -21,7 +81,8 @@ const pool = mysql.createPool({
   database: 'hospital_db',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  charset: 'utf8mb4'
 });
 
 // MySQL Connection Pool (hosoffice - HR Data)
@@ -32,11 +93,12 @@ const hosofficePool = mysql.createPool({
   database: 'hosoffice',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  charset: 'utf8mb4'
 });
 
 // API Endpoint to get data
-app.get('/api/data', async (req, res) => {
+app.get('/api/data', checkAuth, async (req, res) => {
   try {
     const targetDateStr = req.query.date || new Date().toISOString().split('T')[0];
     const targetDateObj = new Date(targetDateStr);
@@ -174,7 +236,7 @@ app.get('/api/data', async (req, res) => {
 });
 
 // GET Monthly Summary Report aggregated by employees
-app.get('/api/report/monthly', async (req, res) => {
+app.get('/api/report/monthly', checkAuth, async (req, res) => {
   try {
     const { month, year } = req.query;
     const targetMonth = `${year}-${month.toString().padStart(2, '0')}`;
@@ -219,7 +281,7 @@ app.get('/api/report/monthly', async (req, res) => {
 // API Endpoints for Shift Scheduling
 const SCHEDULE_FILE = path.join(__dirname, 'data', 'schedule.json');
 
-app.get('/api/schedule', (req, res) => {
+app.get('/api/schedule', checkAuth, (req, res) => {
   try {
     if (fs.existsSync(SCHEDULE_FILE)) {
       const data = fs.readFileSync(SCHEDULE_FILE, 'utf8');
@@ -233,7 +295,7 @@ app.get('/api/schedule', (req, res) => {
   }
 });
 
-app.post('/api/schedule', (req, res) => {
+app.post('/api/schedule', checkAuth, checkAdmin, (req, res) => {
   try {
     const { emp_id, shift, date } = req.body;
     let schedule = [];
@@ -271,14 +333,14 @@ app.post('/api/data', (req, res) => {
 });
 
 // API Endpoint to get personnel from hosoffice
-app.get('/api/personnel', async (req, res) => {
+app.get('/api/personnel', checkAuth, async (req, res) => {
   try {
     const [personnel] = await hosofficePool.query(`
       SELECT 
         p.ID, p.FINGLE_ID, p.HR_PREFIX_ID, p.HR_FNAME, p.HR_LNAME, p.NICKNAME, 
         p.HR_PHONE, p.HR_EMAIL, p.HR_DEPARTMENT_ID, d.HR_DEPARTMENT_NAME,
         p.HR_POSITION_ID, p.HR_STATUS_ID, s.HR_STATUS_NAME,
-        p.HR_STARTWORK_DATE
+        p.HR_STARTWORK_DATE, p.HR_CID
       FROM hr_person p
       LEFT JOIN hr_department d ON p.HR_DEPARTMENT_ID = d.HR_DEPARTMENT_ID
       LEFT JOIN hr_status s ON s.HR_STATUS_ID = p.HR_STATUS_ID
@@ -287,6 +349,53 @@ app.get('/api/personnel', async (req, res) => {
   } catch (error) {
     console.error('Database query error (hosoffice):', error);
     res.status(500).json({ personnel: [] });
+  }
+});
+
+// Admin API - User Management
+app.get('/api/users', checkAuth, checkAdmin, async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id, username, fullname, role, created_at FROM users');
+    res.json({ users: rows });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+app.post('/api/users', checkAuth, checkAdmin, async (req, res) => {
+  const { id, username, password, fullname, role } = req.body;
+  try {
+    if (id) {
+      if (password) {
+        const hashed = await bcrypt.hash(password, 10);
+        await pool.query('UPDATE users SET username=?, password=?, fullname=?, role=? WHERE id=?', 
+          [username, hashed, fullname, role, id]);
+      } else {
+        await pool.query('UPDATE users SET username=?, fullname=?, role=? WHERE id=?', 
+          [username, fullname, role, id]);
+      }
+      res.json({ success: true, message: 'User updated successfully' });
+    } else {
+      const hashed = await bcrypt.hash(password || '123456', 10);
+      await pool.query('INSERT INTO users (username, password, fullname, role) VALUES (?, ?, ?, ?)', 
+        [username, hashed, fullname, role]);
+      res.json({ success: true, message: 'User created successfully' });
+    }
+  } catch (error) {
+    console.error('Error saving user:', error);
+    res.status(500).json({ error: 'Failed to save user' });
+  }
+});
+
+app.delete('/api/users/:id', checkAuth, checkAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM users WHERE id = ?', [id]);
+    res.json({ success: true, message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
   }
 });
 
@@ -316,7 +425,8 @@ const pages = [
   ...depts.map(d => ({ path: `/department/${d.id}`, view: 'department', deptName: d.name })),
   { path: '/report/daily', view: 'daily-report' },
   { path: '/report/monthly', view: 'monthly-report' },
-  { path: '/report/hours', view: 'hours-summary' }
+  { path: '/report/hours', view: 'hours-summary' },
+  { path: '/admin/users', view: 'users' }
 ];
 
 // Mock user session currently logged in (Can be from DB or JWT later)
@@ -327,11 +437,55 @@ const loggedInUser = {
 };
 
 pages.forEach(p => {
-  app.get(p.path, (req, res) => {
-    res.render(p.view, { activeRoute: p.path, user: loggedInUser, deptName: p.deptName || '' });
+  app.get(p.path, checkAuth, (req, res) => {
+    res.render(p.view, { activeRoute: p.path, deptName: p.deptName || '' });
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+// Helper function to initialize DB and Start Server
+async function startServer() {
+  try {
+    // 1. Initialize DB Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        fullname VARCHAR(100),
+        role ENUM('admin', 'user') DEFAULT 'user',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+    `);
+
+    // Ensure existing table is UTF-8
+    await pool.query(`ALTER TABLE users CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+
+    // 2. Add default admin if not exists
+    const [existing] = await pool.query('SELECT id FROM users WHERE username = ?', ['admin']);
+    if (existing.length === 0) {
+      const hashed = await bcrypt.hash('root1234', 10);
+      await pool.query('INSERT INTO users (username, password, fullname, role) VALUES (?, ?, ?, ?)', 
+        ['admin', hashed, 'Hospital Admin', 'admin']);
+    }
+
+    // 3. Add default user if not exists
+    const [existingUser] = await pool.query('SELECT id FROM users WHERE username = ?', ['staff']);
+    if (existingUser.length === 0) {
+      const hashed = await bcrypt.hash('staff1234', 10);
+      await pool.query('INSERT INTO users (username, password, fullname, role) VALUES (?, ?, ?, ?)', 
+        ['staff', hashed, 'Standard Staff', 'user']);
+    }
+
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server is running at http://localhost:${PORT}`);
+      console.log('Login available:');
+      console.log('Admin: admin / root1234');
+      console.log('User: staff / staff1234');
+    });
+  } catch (err) {
+    console.error('Initialization error:', err);
+    process.exit(1);
+  }
+}
+
+startServer();

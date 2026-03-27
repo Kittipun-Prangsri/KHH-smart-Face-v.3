@@ -25,20 +25,54 @@
     <a href="/report/monthly"
       class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/report/monthly' ? 'active' : '' %>"><i
         class="bi bi-calendar3"></i> <span>รายงานสรุปรายเดือน</span></a>
-    <div class="sb-sec">กลุ่มงาน</div>
-    <a href="/department/srt" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/srt' ? 'active' : '' %>"><i class="bi bi-shield-check"></i> <span>ประกันสุขภาพยุทธศาสตร์</span></a>
-    <a href="/department/gen" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/gen' ? 'active' : '' %>"><i class="bi bi-building"></i> <span>บริหารทั่วไป</span></a>
-    <a href="/department/pri" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/pri' ? 'active' : '' %>"><i class="bi bi-heart-pulse"></i> <span>บริการปฐมภูมิฯ</span></a>
-    <a href="/department/pha" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/pha' ? 'active' : '' %>"><i class="bi bi-capsule"></i> <span>เภสัชกรรมและคุ้มครองฯ</span></a>
-    <a href="/department/dig" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/dig' ? 'active' : '' %>"><i class="bi bi-laptop"></i> <span>สุขภาพดิจิทัล</span></a>
-    <a href="/department/nur" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/nur' ? 'active' : '' %>"><i class="bi bi-person-heart"></i> <span>การพยาบาล</span></a>
-    <a href="/department/den" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/den' ? 'active' : '' %>"><i class="bi bi-bandaid"></i> <span>ทันตกรรม</span></a>
-    <a href="/department/medtech" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/medtech' ? 'active' : '' %>"><i class="bi bi-lungs"></i> <span>เทคนิคการแพทย์</span></a>
-    <a href="/department/rehab" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/rehab' ? 'active' : '' %>"><i class="bi bi-person-wheelchair"></i> <span>เวชกรรมฟื้นฟู</span></a>
-    <a href="/department/altmed" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/altmed' ? 'active' : '' %>"><i class="bi bi-flower1"></i> <span>การแพทย์แผนไทยฯ</span></a>
-    <a href="/department/rad" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/rad' ? 'active' : '' %>"><i class="bi bi-virus"></i> <span>รังสีวิทยา</span></a>
-    <a href="/department/psy" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/psy' ? 'active' : '' %>"><i class="bi bi-emoji-smile"></i> <span>จิตเวชและยาเสพติด</span></a>
-    <a href="/department/med" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/med' ? 'active' : '' %>"><i class="bi bi-h-square"></i> <span>การแพทย์</span></a>
+    <% if (locals.user && user.role === 'admin') { %>
+    <a href="/admin/users"
+      class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/admin/users' ? 'active' : '' %>"><i
+        class="bi bi-shield-lock"></i> <span>จัดการสิทธิ์</span></a>
+    <% } %>
+    <div class="sb-sec" style="cursor:pointer; display:flex; align-items:center; justify-content:space-between;" onclick="toggleDropdown('sb-depts', this)">
+      <span>กลุ่มงาน</span>
+      <i class="bi bi-chevron-down" style="font-size:10px; transition:transform 0.3s;"></i>
+    </div>
+    <div id="sb-depts" class="sb-dropdown" style="display:none; flex-direction:column;">
+      <a href="/department/srt" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/srt' ? 'active' : '' %>"><i class="bi bi-shield-check"></i> <span>ประกันสุขภาพยุทธศาสตร์</span></a>
+      <a href="/department/gen" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/gen' ? 'active' : '' %>"><i class="bi bi-building"></i> <span>บริหารทั่วไป</span></a>
+      <a href="/department/pri" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/pri' ? 'active' : '' %>"><i class="bi bi-heart-pulse"></i> <span>บริการปฐมภูมิฯ</span></a>
+      <a href="/department/pha" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/pha' ? 'active' : '' %>"><i class="bi bi-capsule"></i> <span>เภสัชกรรมและคุ้มครองฯ</span></a>
+      <a href="/department/dig" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/dig' ? 'active' : '' %>"><i class="bi bi-laptop"></i> <span>สุขภาพดิจิทัล</span></a>
+      <a href="/department/nur" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/nur' ? 'active' : '' %>"><i class="bi bi-person-heart"></i> <span>การพยาบาล</span></a>
+      <a href="/department/den" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/den' ? 'active' : '' %>"><i class="bi bi-bandaid"></i> <span>ทันตกรรม</span></a>
+      <a href="/department/medtech" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/medtech' ? 'active' : '' %>"><i class="bi bi-lungs"></i> <span>เทคนิคการแพทย์</span></a>
+      <a href="/department/rehab" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/rehab' ? 'active' : '' %>"><i class="bi bi-person-wheelchair"></i> <span>เวชกรรมฟื้นฟู</span></a>
+      <a href="/department/altmed" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/altmed' ? 'active' : '' %>"><i class="bi bi-flower1"></i> <span>การแพทย์แผนไทยฯ</span></a>
+      <a href="/department/rad" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/rad' ? 'active' : '' %>"><i class="bi bi-virus"></i> <span>รังสีวิทยา</span></a>
+      <a href="/department/psy" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/psy' ? 'active' : '' %>"><i class="bi bi-emoji-smile"></i> <span>จิตเวชและยาเสพติด</span></a>
+      <a href="/department/med" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/med' ? 'active' : '' %>"><i class="bi bi-h-square"></i> <span>การแพทย์</span></a>
+    </div>
+
+    <script>
+      function toggleDropdown(id, header) {
+        const el = document.getElementById(id);
+        const icon = header.querySelector('i');
+        if (el.style.display === 'none' || !el.style.display) {
+          el.style.display = 'flex';
+          icon.style.transform = 'rotate(180deg)';
+        } else {
+          el.style.display = 'none';
+          icon.style.transform = 'rotate(0deg)';
+        }
+      }
+      
+      // Auto-open if active link is inside
+      window.addEventListener('DOMContentLoaded', () => {
+        const activeLink = document.querySelector('#sb-depts .sb-link.active');
+        if (activeLink) {
+          const depts = document.getElementById('sb-depts');
+          const header = depts.previousElementSibling;
+          toggleDropdown('sb-depts', header);
+        }
+      });
+    </script>
     <a href="/report/hours"
       class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/report/hours' ? 'active' : '' %>"><i
         class="bi bi-file-earmark-medical"></i> <span>สรุปชั่วโมงทำงาน</span></a>
@@ -46,17 +80,20 @@
   <div class="sb-foot">
     <div class="sb-user">
       <div class="sb-av">
-        <%= typeof user !=='undefined' ? user.initial : 'A' %>
+        <%= locals.user ? user.username.charAt(0).toUpperCase() : 'U' %>
       </div>
       <div>
         <div class="sb-uname">
-          <%= typeof user !=='undefined' ? user.name : 'ผู้ดูแลระบบ' %>
+          <%= locals.user ? user.fullname : 'Guest User' %>
         </div>
         <div class="sb-urole">
-          <%= typeof user !=='undefined' ? user.role : 'Administrator' %>
+          <%= locals.user ? (user.role === 'admin' ? 'Administrator' : 'Personnel Staff') : '--' %>
         </div>
       </div>
-      <i class="bi bi-three-dots ms-auto" style="color:rgba(255,255,255,.35);font-size:15px;"></i>
+      <a href="/logout" class="ms-auto" title="ออกจากระบบ" style="color:rgba(255,255,255,.5);"><i class="bi bi-box-arrow-right"></i></a>
     </div>
   </div>
 </nav>
+
+<!-- MOBILE OVERLAY -->
+<div class="sb-overlay" id="sidebar-overlay" onclick="toggleGlobalSidebar()"></div>

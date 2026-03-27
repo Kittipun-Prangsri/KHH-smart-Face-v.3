@@ -408,7 +408,9 @@
     </div>
     <div class="topbar-actions" id="topbar-actions-panel">
       <button class="btn btn-ghost btn-sm" onclick="goToday(); showTab('calendar')">สัปดาห์นี้</button>
-      <button class="btn btn-primary btn-sm" onclick="openAddEmpModal()">+ เพิ่มพนักงาน</button>
+      <% if (locals.user && user.role === 'admin') { %>
+        <button class="btn btn-primary btn-sm" onclick="openAddEmpModal()">+ เพิ่มพนักงาน</button>
+      <% } %>
     </div>
   </div>
 
@@ -636,9 +638,13 @@
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-danger" id="btn-delete" onclick="deleteEmployee()" style="display:none; margin-right:auto;">ลบข้อมูล</button>
+      <% if (locals.user && user.role === 'admin') { %>
+        <button class="btn btn-danger" id="btn-delete" onclick="deleteEmployee()" style="display:none; margin-right:auto;">ลบข้อมูล</button>
+      <% } %>
       <button class="btn btn-ghost" onclick="closeModalDirect()">ยกเลิก</button>
-      <button class="btn btn-primary" onclick="saveEmployee()">บันทึก</button>
+      <% if (locals.user && user.role === 'admin') { %>
+        <button class="btn btn-primary" onclick="saveEmployee()">บันทึก</button>
+      <% } %>
     </div>
   </div>
 </div>
@@ -647,6 +653,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
+  const userRole = '<%= locals.user ? user.role : "user" %>';
 // ============ DATA ============
 const SHIFTS = [
   { id:1, type:'MORNING',   label:'กะเช้า',  time:'06:00-14:00', color:'#D97706',  dot:'#F59E0B' },
@@ -1055,6 +1062,10 @@ function closeModalDirect() { document.getElementById('shift-modal-overlay').cla
 function closeModal(e) { if(e.target===document.getElementById('shift-modal-overlay')) closeModalDirect(); }
 
 function openAddSlot(date) {
+  if (userRole !== 'admin') {
+    showToast('⚠️ เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถจัดการตารางเวรได้');
+    return;
+  }
   openAddEmpModal();
   if (date) document.getElementById('f-date').value = date;
 }
@@ -1077,6 +1088,10 @@ function openAddEmpModal() {
 }
 
 function showEmpDetail(id, date) {
+  if (userRole !== 'admin') {
+    showToast('⚠️ เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถจัดการตารางเวรได้');
+    return;
+  }
   const emp = employees.find(e=>e.id===id && (!date || e.date === date));
   if (!emp) return;
   editId = id;

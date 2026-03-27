@@ -9,12 +9,19 @@
       function toggleGlobalSidebar() {
         const sidebar = document.getElementById('sidebar');
         const main = document.querySelector('.main');
-        if (sidebar) sidebar.classList.toggle('collapsed');
-        if (main) main.classList.toggle('expanded');
+        const overlay = document.getElementById('sidebar-overlay');
+        
+        if (window.innerWidth < 992) {
+          sidebar.classList.toggle('mobile-active');
+          if (overlay) overlay.classList.toggle('active');
+        } else {
+          if (sidebar) sidebar.classList.toggle('collapsed');
+          if (main) main.classList.toggle('expanded');
+        }
       }
     </script>
     <div class="topbar-left">
-      <h6>Dashboard - KHH</h6>
+      <h6>Dashboard - KHH (<%= locals.user ? user.role.toUpperCase() : 'USER' %>)</h6>
       <small id="currentDate">กำลังโหลด...</small>
     </div>
   </div>
