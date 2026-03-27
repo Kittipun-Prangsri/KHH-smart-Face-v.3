@@ -14,13 +14,256 @@
 <%- include("components/sidebar") %>
 <div class="main">
 <%- include("components/topbar") %>
-  <div class="page">
-    <div class="table-card page-empty">
-      <i class="bi bi-tools" style="font-size:48px;color:var(--border);margin-bottom:16px;display:block;"></i>
-      <h3 style="color:var(--primary);font-weight:700;">บันทึกเข้า-ออกงาน</h3>
-      <p>ระบบกำลังอยู่ในระหว่างการพัฒนา</p>
+<!-- PAGE -->
+<div class="page">
+  
+  <!-- MINI STATS -->
+  <div class="stat-row" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom: 20px;">
+    <div class="stat-box" style="padding:14px; gap:120x;">
+      <div class="stat-ico s1" style="width:36px; height:36px; font-size:16px;"><i class="bi bi-people"></i></div>
+      <div>
+        <div class="stat-val" style="font-size:22px;" id="count-total">0</div>
+        <div class="stat-lbl" style="font-size:11px;">พนักงานทั้งหมด</div>
+      </div>
+    </div>
+    <div class="stat-box" style="padding:14px;">
+      <div class="stat-ico" style="width:36px; height:36px; font-size:16px; background:#ECFDF5; color:#10B981;"><i class="bi bi-check2-circle"></i></div>
+      <div>
+        <div class="stat-val" style="font-size:22px;" id="count-in">0</div>
+        <div class="stat-lbl" style="font-size:11px;">มาทำงานแล้ว</div>
+      </div>
+    </div>
+    <div class="stat-box" style="padding:14px;">
+      <div class="stat-ico s3" style="width:36px; height:36px; font-size:16px;"><i class="bi bi-alarm"></i></div>
+      <div>
+        <div class="stat-val" style="font-size:22px;" id="count-late">0</div>
+        <div class="stat-lbl" style="font-size:11px;">มาสาย</div>
+      </div>
+    </div>
+    <div class="stat-box" style="padding:14px;">
+      <div class="stat-ico s4" style="width:36px; height:36px; font-size:16px;"><i class="bi bi-question-circle"></i></div>
+      <div>
+        <div class="stat-val" style="font-size:22px;" id="count-none">0</div>
+        <div class="stat-lbl" style="font-size:11px;">ยังไม่เข้างาน</div>
+      </div>
+    </div>
+    <div class="stat-box" style="padding:14px;">
+        <div class="stat-ico s1" style="width:36px; height:36px; font-size:16px; background:#FEF3C7; color:#D97706;"><i class="bi bi-calendar-x"></i></div>
+        <div>
+          <div class="stat-val" style="font-size:22px;" id="count-leave">0</div>
+          <div class="stat-lbl" style="font-size:11px;">ไปราชการ/ลา</div>
+        </div>
+      </div>
+  </div>
+
+  <!-- FILTER & SEARCH BAR -->
+  <div class="filter-bar" style="border-radius:15px; background:#fff; padding:15px 20px; box-shadow:0 1px 10px rgba(0,0,0,0.03);">
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; flex:1;">
+      <div class="input-group" style="max-width:180px;">
+        <span class="input-group-text" style="background:#F8FAFC;border:none;"><i class="bi bi-calendar-check" style="color:var(--primary)"></i></span>
+        <input type="date" class="form-control" id="date-filter" style="border:none;background:#F8FAFC;font-size:13px;font-weight:600;" onchange="loadAttendanceData()">
+      </div>
+      
+      <div style="height:24px; width:1px; background:var(--border); margin:0 5px;"></div>
+      
+      <select class="form-select" id="dept-filter" style="max-width:200px; border:none; background:#F8FAFC; font-size:13px;" onchange="applyFilters()">
+        <option value="">ทุกกลุ่มงาน</option>
+        <option>กลุ่มงานประกันสุขภาพยุทธศาสตร์</option>
+        <option>กลุ่มงานบริหารทั่วไป</option>
+        <option>กลุ่มงานบริการด้านปฐมภูมิและองค์รวม</option>
+        <option>กลุ่มงานเภสัชกรรมและคุ้มครองผู้บริโภค</option>
+        <option>กลุ่มงานสุขภาพดิจิทัล</option>
+        <option>กลุ่มงานการพยาบาล</option>
+        <option>กลุ่มงานทันตกรรม</option>
+        <option>กลุ่มงานเทคนิคการแพทย์</option>
+        <option>กลุ่มงานเวชกรรมฟื้นฟู</option>
+        <option>กลุ่มงานการแพทย์แผนไทยและการแพทย์ทางเลือก</option>
+        <option>กลุ่มงานรังสีวิทยา</option>
+        <option>กลุ่มงานจิตเวชและยาเสพติด</option>
+        <option>กลุ่มงานการแพทย์</option>
+      </select>
+
+      <select class="form-select" id="status-filter" style="max-width:140px; border:none; background:#F8FAFC; font-size:13px;" onchange="applyFilters()">
+        <option value="">ทุกสถานะ</option>
+        <option value="in">เข้างาน</option>
+        <option value="out">ออกงาน</option>
+        <option value="late">มาสาย</option>
+        <option value="leave">ลา/ไปราชการ</option>
+        <option value="none">ยังไม่มา</option>
+      </select>
+
+      <div class="input-group" style="max-width:260px; flex:1;">
+        <span class="input-group-text" style="background:#F8FAFC; border:none;"><i class="bi bi-search"></i></span>
+        <input type="text" id="search-input" class="form-control" placeholder="ค้นหาชื่อหรือรหัสพนักงาน..." style="border:none; background:#F8FAFC; font-size:13px;" oninput="applyFilters()">
+      </div>
+    </div>
+    
+    <div style="display:flex; gap:10px;">
+       <button class="btn-outline-dark" style="height:38px; padding:0 15px; border-radius:10px;" onclick="refreshLive()"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button>
+       <button class="btn-teal" style="height:38px; padding:0 20px; border-radius:10px;" onclick="exportRecords()"><i class="bi bi-file-earmark-arrow-down"></i> ส่งออก</button>
     </div>
   </div>
+
+  <div style="font-size:12px; color:var(--muted); margin:15px 5px 10px; display:flex; justify-content:space-between; align-items:center;">
+    <span>แสดง <strong id="total-rows">0</strong> รายการที่พบ</span>
+    <span style="font-weight:600; color:var(--primary);" id="display-date">ประจำวันนี้</span>
+  </div>
+
+  <!-- MAIN TABLE -->
+  <div class="table-card" style="border-radius:18px; box-shadow:0 10px 30px rgba(0,0,0,0.04); border:none;">
+    <div style="overflow-x:auto;">
+      <table class="att-tbl">
+        <thead style="background:#F8FAFC;">
+          <tr>
+            <th style="padding-left:24px;">บุคลากร</th>
+            <th>กลุ่มงาน / แผนก</th>
+            <th style="text-align:center;">สถานะวันนี้</th>
+            <th style="text-align:center;">เวลาเข้า (In)</th>
+            <th style="text-align:center;">เวลาออก (Out)</th>
+            <th style="text-align:center;">ชั่วโมงทำงาน</th>
+            <th style="padding-right:24px;">ความแม่นยำ/หมายเหตุ</th>
+          </tr>
+        </thead>
+        <tbody id="attendance-list">
+          <!-- Data Rows -->
+        </tbody>
+      </table>
+    </div>
+    
+    <div id="no-data-msg" style="display:none; text-align:center; padding:50px; color:var(--muted);">
+       <i class="bi bi-calendar-x" style="font-size:48px; opacity:0.2;"></i>
+       <p style="margin-top:15px;">ไม่พบข้อมูลการเข้างานที่ตรงกับเงื่อนไข</p>
+    </div>
+
+    <!-- PAGER placeholder -->
+    <div class="pager" style="border-top:1px solid #f1f1f1; padding:15px 24px;">
+       <div id="pager-text" style="font-size:12px; color:var(--muted);">พร้อมแสดงข้อมูลพนักงานทั้งหมด</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let employees = [];
+  let filtered = [];
+
+  const STATUS_LABELS = {
+    'in': '<span class="status-chip chip-in">กำลังทำงาน (In)</span>',
+    'out': '<span class="status-chip chip-out">ออกเวรแล้ว (Out)</span>',
+    'late': '<span class="status-chip chip-late">เข้าสาย (Late)</span>',
+    'leave': '<span class="status-chip" style="background:#FEF3C7; color:#D97706;">ไปราชการ/ลา</span>',
+    'none': '<span class="status-chip chip-absent">ยังไม่บันทึกเวลา</span>',
+    'absent': '<span class="status-chip chip-absent">ขาดงาน</span>'
+  };
+
+  async function loadAttendanceData() {
+    const dateInput = document.getElementById('date-filter');
+    const selectedDate = dateInput.value;
+    if(!selectedDate) return;
+
+    // Update UI title
+    const d = new Date(selectedDate);
+    document.getElementById('display-date').textContent = `ข้อมูลประจำวันที่ ${d.toLocaleDateString('th-TH', {day:'numeric', month:'long', year:'numeric'})}`;
+
+    try {
+      const res = await fetch(`/api/data?date=${selectedDate}`);
+      if (res.ok) {
+        const data = await res.json();
+        employees = data.employees || [];
+        updateStats();
+        applyFilters();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function updateStats() {
+    document.getElementById('count-total').textContent = employees.length;
+    document.getElementById('count-in').textContent = employees.filter(e => e.status === 'in' || e.status === 'late').length;
+    document.getElementById('count-late').textContent = employees.filter(e => e.status === 'late').length;
+    document.getElementById('count-none').textContent = employees.filter(e => e.status === 'none').length;
+    document.getElementById('count-leave').textContent = employees.filter(e => e.status === 'leave').length;
+  }
+
+  function applyFilters() {
+    const dept = document.getElementById('dept-filter').value;
+    const status = document.getElementById('status-filter').value;
+    const search = document.getElementById('search-input').value.toLowerCase();
+
+    filtered = employees.filter(e => {
+      const matchDept = !dept || e.dept === dept;
+      const matchStatus = !status || e.status === status;
+      const matchSearch = !search || e.name.toLowerCase().includes(search) || (e.id && e.id.toLowerCase().includes(search));
+      return matchDept && matchStatus && matchSearch;
+    });
+
+    renderList();
+  }
+
+  function renderList() {
+    const list = document.getElementById('attendance-list');
+    const noData = document.getElementById('no-data-msg');
+    
+    if (filtered.length === 0) {
+      list.innerHTML = '';
+      noData.style.display = 'block';
+      document.getElementById('total-rows').textContent = 0;
+      return;
+    }
+
+    noData.style.display = 'none';
+    list.innerHTML = filtered.map(e => {
+      const statChip = STATUS_LABELS[e.status] || STATUS_LABELS['none'];
+      const timeIn = e.in || '--:--';
+      const timeOut = e.out && e.out !== e.in ? e.out : '--:--';
+      const hours = e.hours || '0';
+      const conf = e.conf ? `<div class="conf-bar" style="width:40px; margin:0;"><div class="conf-fill" style="width:${e.conf}%; background:${e.conf > 98 ? '#10B981' : '#F59E0B'}"></div></div> <small style="font-size:10px;">${e.conf}%</small>` : '';
+
+      return `
+        <tr>
+          <td style="padding-left:24px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+               <div class="av" style="background:var(--primary); color:#fff; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700;">${e.name.charAt(0)}</div>
+               <div>
+                  <div style="font-weight:700; color:var(--text); font-size:13.5px;">${e.name}</div>
+                  <div style="font-size:10.5px; color:var(--muted);">FINGLE ID: ${e.id || '-'}</div>
+               </div>
+            </div>
+          </td>
+          <td style="font-size:12.5px; color:var(--text2);">${e.dept}</td>
+          <td style="text-align:center;">${statChip}</td>
+          <td style="text-align:center;"><span class="time-tag">${timeIn}</span></td>
+          <td style="text-align:center;"><span class="time-tag ${timeOut !== '--:--' ? 'out' : ''}">${timeOut}</span></td>
+          <td style="text-align:center; font-weight:700;">${hours} ชม.</td>
+          <td style="padding-right:24px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+               ${conf}
+               <span style="font-size:10px; color:#D97706; font-weight:600;">${e.leave_status || ''}</span>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    document.getElementById('total-rows').textContent = filtered.length;
+  }
+
+  function refreshLive() {
+    loadAttendanceData();
+  }
+
+  function exportRecords() {
+    alert('ส่งออกบันทึกการทำงานพนักงานทั้งหมด (CSV/Excel)');
+  }
+
+  // Initialize
+  window.onload = () => {
+    const now = new Date();
+    document.getElementById('date-filter').value = now.toISOString().split('T')[0];
+    loadAttendanceData();
+  };
+</script>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

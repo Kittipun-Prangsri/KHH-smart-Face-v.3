@@ -8,13 +8,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
 <link rel="stylesheet" href="/css/style.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>.page-empty { padding: 40px 24px; text-align: center; color: var(--muted); }</style>
 </head>
 <body>
-<%- include("components/sidebar") %>
-<div class="main">
-<%- include("components/topbar") %>
-  <div class="page" style="padding: 0; ">
+<!-- Global layout includes removed because schedule.ejs is an internal app with its own layout -->
 <div class="shift-app-wrap">
 <style>
 
@@ -29,11 +28,11 @@
   --text: var(--text, #0F172A);
   --text2: #475569;
   --text3: var(--muted, #64748B);
-  --accent: var(--accent, #00B8A9);
-  --accent2: #0B6E6E;
-  --morning: var(--morning, #F59E0B);
-  --afternoon: var(--afternoon, #3B82F6);
-  --night: var(--night, #7C3AED);
+  --accent: #0D9488;
+  --accent2: #0F766E;
+  --morning: #F59E0B;
+  --afternoon: #2563EB;
+  --night: #7C3AED;
   --success: #10B981;
   --danger: #EF4444;
   --warn: #F59E0B;
@@ -43,21 +42,174 @@
 .shift-app-wrap {background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.6}
 .shift-app-wrap {display:flex;min-height:100vh}
 
-/* Sidebar */
-.shift-app-wrap .sidebar{width:220px;min-width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:0}
-.shift-app-wrap .sidebar-logo{padding:28px 24px 20px;border-bottom:1px solid var(--border)}
-.shift-app-wrap .logo-mark{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;margin-bottom:4px}
-.shift-app-wrap .logo-title{font-size:17px;font-weight:600;letter-spacing:-.02em}
-.shift-app-wrap .logo-sub{font-size:11px;color:var(--text3);margin-top:2px}
-.shift-app-wrap .sidebar-nav{padding:16px 12px;flex:1}
-.shift-app-wrap .nav-label{font-size:10px;font-weight:500;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;padding:0 12px;margin:16px 0 6px}
-.shift-app-wrap .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:14px;color:var(--text2);transition:all .15s;margin-bottom:1px;border:1px solid transparent;user-select:none}
-.shift-app-wrap .nav-item:hover{background:var(--bg3);color:var(--text)}
-.shift-app-wrap .nav-item.active{background:var(--bg4);color:var(--text);border-color:var(--border)}
-.shift-app-wrap .nav-icon{width:16px;height:16px;opacity:.7}
-.shift-app-wrap .sidebar-footer{padding:16px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--text3)}
-.shift-app-wrap .status-dot{display:inline-block;width:6px;height:6px;background:var(--success);border-radius:50%;margin-right:6px;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+/* Sidebar Modernized */
+.shift-app-wrap .sidebar {
+  width: 270px;
+  min-width: 270px;
+  background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow: hidden;
+  box-shadow: 10px 0 40px rgba(0,0,0,0.15);
+  z-index: 100;
+  position: relative;
+}
+
+.shift-app-wrap .sidebar::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 100%;
+  background: radial-gradient(circle at top left, rgba(13, 148, 136, 0.15), transparent 70%);
+  pointer-events: none;
+}
+
+.shift-app-wrap .sidebar.collapsed { width: 0; min-width: 0; padding: 0; box-shadow: none; }
+
+.shift-app-wrap .sidebar-logo {
+  padding: 32px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.shift-app-wrap .logo-container {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 6px;
+}
+
+.shift-app-wrap .logo-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #fff;
+  padding: 3px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.shift-app-wrap .logo-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.shift-app-wrap .logo-sub {
+  font-size: 11px;
+  color: #94A3B8;
+  font-weight: 500;
+}
+
+.shift-app-wrap .sidebar-nav { 
+  padding: 10px 14px; 
+  flex: 1; 
+  overflow-y: auto; 
+  scrollbar-width: none;
+}
+.shift-app-wrap .sidebar-nav::-webkit-scrollbar { display: none; }
+
+.shift-app-wrap .nav-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748B;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 24px 12px 8px;
+}
+
+.shift-app-wrap .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #94A3B8;
+  transition: all 0.25s ease;
+  border-radius: 12px;
+  user-select: none;
+  font-weight: 500;
+  position: relative;
+}
+
+.shift-app-wrap .nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  transform: translateX(4px);
+}
+
+.shift-app-wrap .nav-item.active {
+  background: rgba(13, 148, 136, 0.15);
+  color: #2DD4BF;
+  font-weight: 600;
+}
+
+.shift-app-wrap .nav-item.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 4px;
+  background: #0D9488;
+  border-radius: 0 4px 4px 0;
+  box-shadow: 0 0 10px rgba(13, 148, 136, 0.5);
+}
+
+.shift-app-wrap .nav-icon { 
+  width: 18px; 
+  height: 18px; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
+
+.shift-app-wrap .nav-item:hover .nav-icon {
+  transform: scale(1.1);
+}
+
+.shift-app-wrap .sidebar-footer {
+  padding: 20px;
+  margin: 14px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255,255,255,0.05);
+  font-size: 12px;
+  color: #94A3B8;
+}
+
+.shift-app-wrap .status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #10B981;
+  border-radius: 50%;
+  margin-right: 10px;
+  box-shadow: 0 0 8px rgba(16,185,129,0.5);
+  position: relative;
+}
+
+.shift-app-wrap .status-dot::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 2px solid #10B981;
+  animation: ripple 1.5s infinite;
+}
+
+@keyframes ripple {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.1); } }
 
 /* Main */
 .shift-app-wrap .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
@@ -68,8 +220,8 @@
 
 /* Buttons */
 .shift-app-wrap .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;border:1px solid transparent;font-family:var(--font)}
-.shift-app-wrap .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent2)}
-.shift-app-wrap .btn-primary:hover{background:#3d6ef0;filter:brightness(1.1)}
+.shift-app-wrap .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent2);box-shadow: 0 2px 8px rgba(13,148,136,0.3);}
+.shift-app-wrap .btn-primary:hover{background:var(--accent2);filter:brightness(1.1);transform: translateY(-1px);}
 .shift-app-wrap .btn-ghost{background:transparent;color:var(--text2);border-color:var(--border)}
 .shift-app-wrap .btn-ghost:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
 .shift-app-wrap .btn-danger{background:transparent;color:var(--danger);border-color:var(--danger)}
@@ -118,12 +270,12 @@
 .shift-app-wrap .emp-no{font-size:11px;color:var(--text3);font-family:var(--mono)}
 .shift-app-wrap .emp-meta{display:flex;gap:8px;flex-wrap:wrap}
 .shift-app-wrap .tag{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid}
-.shift-app-wrap .tag-team{color:var(--accent);border-color:rgba(79,124,255,.3);background:rgba(79,124,255,.08)}
+.shift-app-wrap .tag-team{color:#0D9488;border-color:rgba(13,148,136,.3);background:rgba(13,148,136,.08)}
 .shift-app-wrap .tag-shift{border-color:var(--border)}
-.shift-app-wrap .tag-morning{color:var(--morning);border-color:rgba(255,179,71,.3);background:rgba(255,179,71,.08)}
-.shift-app-wrap .tag-afternoon{color:var(--afternoon);border-color:rgba(79,195,247,.3);background:rgba(79,195,247,.08)}
+.shift-app-wrap .tag-morning{color:#D97706;border-color:rgba(217,119,6,.3);background:rgba(217,119,6,.12)}
+.shift-app-wrap .tag-afternoon{color:#2563EB;border-color:rgba(37,99,235,.3);background:rgba(37,99,235,.12)}
 .shift-app-wrap .tag-empty{color:var(--text3);border-color:rgba(100,116,139,.3);background:rgba(100,116,139,.08)}
-.shift-app-wrap .tag-night{color:var(--night);border-color:rgba(155,142,247,.3);background:rgba(155,142,247,.08)}
+.shift-app-wrap .tag-night{color:#7C3AED;border-color:rgba(124,58,237,.3);background:rgba(124,58,237,.12)}
 .shift-app-wrap .emp-stats{border-top:1px solid var(--border);margin-top:12px;padding-top:12px;display:flex;gap:16px}
 .shift-app-wrap .mini-stat{font-size:11px;color:var(--text3)}
 .shift-app-wrap .mini-stat strong{color:var(--text);font-weight:500;display:block;font-size:15px;font-family:var(--mono)}
@@ -185,39 +337,63 @@
 
 
 <!-- Sidebar -->
-<nav class="sidebar">
+<nav class="sidebar" id="shift-sidebar">
   <div class="sidebar-logo">
-    <div class="logo-mark">ShiftOS</div>
-    <div class="logo-title">ระบบตารางเวร</div>
-    <div class="logo-sub">3 กะ · 24 ชั่วโมง</div>
+    <div class="logo-container">
+      <img src="/images/LOGO%20KHH.jpg" alt="KHH Logo" class="logo-img">
+      <div class="logo-title">โรงพยาบาล<br>คลองหาด</div>
+    </div>
+    <div class="logo-sub">ระบบจัดการตารางเวร 24 ชม.</div>
   </div>
+  
   <div class="sidebar-nav">
-    <div class="nav-label">หลัก</div>
+    <div class="nav-label">เมนูหลัก</div>
+    <div class="nav-item" onclick="location.href='/'">
+      <i class="bi bi-grid-1x2 nav-icon" style="font-size: 16px;"></i>
+      <span>แดชบอร์ดระบบ</span>
+    </div>
+    
+    <div class="nav-label">จัดการเวร</div>
     <div class="nav-item active" onclick="showTab('calendar')">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="2" width="14" height="13" rx="2"/><line x1="5" y1="1" x2="5" y2="4"/><line x1="11" y1="1" x2="11" y2="4"/><line x1="1" y1="7" x2="15" y2="7"/></svg>
-      ตารางเวร
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="2" width="14" height="13" rx="2"/><line x1="5" y1="1" x2="5" y2="4"/><line x1="11" y1="1" x2="11" y2="4"/><line x1="1" y1="7" x2="15" y2="7"/></svg>
+      <span>ตารางเวรประจำสัปดาห์</span>
     </div>
     <div class="nav-item" onclick="showTab('team')">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="6" cy="5" r="3"/><path d="M1 14c0-3 2.3-5 5-5"/><circle cx="12" cy="7" r="2.5"/><path d="M9.5 14c0-2 1.2-3.5 2.5-3.5s2.5 1.5 2.5 3.5"/></svg>
-      ทีมพนักงาน
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="5" r="3"/><path d="M1 14c0-3 2.3-5 5-5"/><circle cx="12" cy="7" r="2.5"/><path d="M9.5 14c0-2 1.2-3.5 2.5-3.5s2.5 1.5 2.5 3.5"/></svg>
+      <span>รายชื่อพนักงาน</span>
     </div>
     <div class="nav-item" onclick="showTab('notify')">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1a5 5 0 0 1 5 5v2l1 2H2l1-2V6a5 5 0 0 1 5-5z"/><path d="M6.5 13a1.5 1.5 0 0 0 3 0"/></svg>
-      แจ้งเตือน
-      <span id="notif-badge" style="margin-left:auto;background:var(--accent);color:#fff;font-size:10px;padding:1px 6px;border-radius:20px;font-family:var(--mono)">0</span>
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1a5 5 0 0 1 5 5v2l1 2H2l1-2V6a5 5 0 0 1 5-5z"/><path d="M6.5 13a1.5 1.5 0 0 0 3 0"/></svg>
+      <span>การแจ้งเตือน</span>
+      <span id="notif-badge" style="margin-left:auto;background:#F59E0B;color:#fff;font-size:10px;padding:1px 6px;border-radius:20px;font-family:var(--mono);font-weight:700;">0</span>
     </div>
-    <div class="nav-label">Export</div>
+    
+    <div class="nav-label">รายงานและข้อมูล</div>
+    <div class="nav-item" onclick="showTab('daily-report')">
+      <i class="bi bi-file-earmark-bar-graph nav-icon" style="font-size: 16px;"></i>
+      <span>รายงานรายวัน</span>
+    </div>
+    <div class="nav-item" onclick="showTab('monthly-report')">
+      <i class="bi bi-calendar3 nav-icon" style="font-size: 16px;"></i>
+      <span>รายงานสรุปรายเดือน</span>
+    </div>
+    
+    <div class="nav-label">EXPORT</div>
     <div class="nav-item" onclick="exportExcel()">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="14" height="14" rx="2"/><path d="M5 5l6 6M11 5l-6 6"/></svg>
-      Excel (.xlsx)
+      <i class="bi bi-file-earmark-excel nav-icon" style="font-size: 16px;"></i>
+      <span>Export to Excel (.xlsx)</span>
     </div>
     <div class="nav-item" onclick="exportPDF()">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 1h7l3 3v11H3V1z"/><path d="M10 1v3h3"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="9" y2="11"/></svg>
-      PDF
+      <i class="bi bi-file-earmark-pdf nav-icon" style="font-size: 16px;"></i>
+      <span>Export to PDF</span>
     </div>
   </div>
+  
   <div class="sidebar-footer">
-    <span class="status-dot"></span>API เชื่อมต่อแล้ว
+    <div class="d-flex align-items-center">
+      <span class="status-dot"></span>
+      <span style="font-weight:500;">ระบบเชื่อมต่อฐานข้อมูลแล้ว</span>
+    </div>
   </div>
 </nav>
 
@@ -225,10 +401,12 @@
 <div class="main">
   <div class="topbar">
     <div style="display:flex; align-items:center; gap: 15px;">
-      <a href="/" class="btn btn-ghost btn-sm" style="text-decoration: none;"><i class="bi bi-arrow-left"></i> กลับหน้าหลัก</a>
+      <button class="btn btn-ghost btn-icon" onclick="toggleSidebar()" style="margin-right: 5px;">
+        <i class="bi bi-list" style="font-size: 20px;"></i>
+      </button>
       <div class="topbar-title" id="topbar-title" style="margin: 0;">ตารางเวรประจำสัปดาห์</div>
     </div>
-    <div class="topbar-actions">
+    <div class="topbar-actions" id="topbar-actions-panel">
       <button class="btn btn-ghost btn-sm" onclick="goToday(); showTab('calendar')">สัปดาห์นี้</button>
       <button class="btn btn-primary btn-sm" onclick="openAddEmpModal()">+ เพิ่มพนักงาน</button>
     </div>
@@ -269,6 +447,12 @@
           <button class="btn btn-ghost btn-icon" onclick="prevWeek()">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 2L4 7l5 5"/></svg>
           </button>
+          <div style="position:relative; display:inline-block;">
+            <button class="btn btn-ghost btn-icon" onclick="document.getElementById('cal-jump').showPicker()" title="เลือกวันที่">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="2" width="10" height="10" rx="1"/><line x1="2" y1="5" x2="12" y2="5"/><line x1="4" y1="1" x2="4" y2="3"/><line x1="10" y1="1" x2="10" y2="3"/></svg>
+            </button>
+            <input type="date" id="cal-jump" onchange="jumpToSpecificDate(this.value)" style="position:absolute; opacity:0; pointer-events:none; left:0; top:0; width:100%; height:100%;">
+          </div>
           <button class="btn btn-ghost btn-sm" onclick="goToday()">วันนี้</button>
           <button class="btn btn-ghost btn-icon" onclick="nextWeek()">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 2l5 5-5 5"/></svg>
@@ -303,7 +487,107 @@
       </div>
     </div>
 
-  </div>
+    <!-- TAB: DAILY REPORT -->
+    <div id="tab-daily-report" style="display:none" class="fade-in">
+        <div class="section-header">
+            <div class="section-title">รายงานการเข้างานรายวัน</div>
+            <div style="display:flex; gap:10px;">
+                <input type="date" class="form-input" id="report-date-input" style="width:160px; padding:5px 10px;" onchange="fetchDailyReportData()">
+                <button class="btn btn-ghost btn-sm" onclick="fetchDailyReportData()"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button>
+            </div>
+        </div>
+        
+        <div style="background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:20px;">
+            <div style="overflow-x:auto;">
+                <table class="att-tbl" style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="border-bottom:1px solid var(--border); background:rgba(0,0,0,0.02);">
+                            <th style="padding:12px; text-align:left;">ชื่อ-นามสกุล</th>
+                            <th style="padding:12px; text-align:left;">กลุ่มงาน</th>
+                            <th style="padding:12px; text-align:center;">สถานะ</th>
+                            <th style="padding:12px; text-align:center;">เวลาเข้า</th>
+                            <th style="padding:12px; text-align:center;">เวลาออก</th>
+                            <th style="padding:12px; text-align:center;">รวมเวลา</th>
+                        </tr>
+                    </thead>
+                    <tbody id="daily-report-body">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="daily-report-empty" style="text-align:center; padding:40px; color:var(--text3); display:none;">
+                <i class="bi bi-inbox" style="font-size:32px; opacity:0.3;"></i>
+                <p>ไม่มีข้อมูลสำหรับวันที่เลือก</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB: MONTHLY REPORT -->
+    <div id="tab-monthly-report" style="display:none" class="fade-in">
+        <div class="section-header">
+            <div class="section-title">รายงานสรุปรายเดือน (Scheduler)</div>
+            <div style="display:flex; gap:10px;">
+                <select class="form-input" id="monthly-month-input" style="width:120px; padding:5px 10px;" onchange="fetchMonthlyReportData()">
+                    <option value="1">มกราคม</option>
+                    <option value="2">กุมภาพันธ์</option>
+                    <option value="3" selected>มีนาคม</option>
+                    <option value="4">เมษายน</option>
+                    <option value="5">พฤษภาคม</option>
+                    <option value="6">มิถุนายน</option>
+                    <option value="7">กรกฎาคม</option>
+                    <option value="8">สิงหาคม</option>
+                    <option value="9">กันยายน</option>
+                    <option value="10">ตุลาคม</option>
+                    <option value="11">พฤศจิกายน</option>
+                    <option value="12">ธันวาคม</option>
+                </select>
+                <select class="form-input" id="monthly-year-input" style="width:100px; padding:5px 10px;" onchange="fetchMonthlyReportData()">
+                    <option value="2025" selected>2025</option>
+                    <option value="2024">2024</option>
+                </select>
+                <button class="btn btn-teal btn-sm" onclick="fetchMonthlyReportData()"><i class="bi bi-arrow-clockwise"></i> ประมวลผล</button>
+            </div>
+        </div>
+
+        <!-- Mini Stats Grid -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:15px; margin-bottom:20px;">
+            <div class="stat-card" style="padding:15px; background:var(--bg2); border:1px solid var(--border); border-radius:12px;">
+                <div style="font-size:12px; color:var(--text3);">มาทำงานรวม</div>
+                <div style="font-size:20px; font-weight:700;"><span id="monthly-stat-days">0</span> วัน</div>
+            </div>
+            <div class="stat-card" style="padding:15px; background:var(--bg2); border:1px solid var(--border); border-radius:12px;">
+                <div style="font-size:12px; color:var(--text3);">ชั่วโมงทำงานรวม</div>
+                <div style="font-size:20px; font-weight:700;"><span id="monthly-stat-hours">0</span> ชม.</div>
+            </div>
+            <div class="stat-card" style="padding:15px; background:var(--bg2); border:1px solid var(--border); border-radius:12px;">
+                <div style="font-size:12px; color:var(--text3);">มาสายสะสม</div>
+                <div style="font-size:20px; font-weight:700; color:var(--warning);"><span id="monthly-stat-late">0</span> ครั้ง</div>
+            </div>
+        </div>
+
+        <div style="background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:20px;">
+            <div style="overflow-x:auto;">
+                <table class="att-tbl" style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="border-bottom:1px solid var(--border); background:rgba(0,0,0,0.02);">
+                            <th style="padding:12px; text-align:left;">ชื่อ-นามสกุล</th>
+                            <th style="padding:12px; text-align:center;">มาทำงาน (วัน)</th>
+                            <th style="padding:12px; text-align:center;">มาสาย (ครั้ง)</th>
+                            <th style="padding:12px; text-align:center;">ขาด (วัน)</th>
+                            <th style="padding:12px; text-align:center;">รวมเวลา (ชม.)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthly-report-body">
+                        <!-- Data Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="monthly-report-empty" style="text-align:center; padding:40px; color:var(--text3); display:none;">
+                <i class="bi bi-calendar-x" style="font-size:32px; opacity:0.3;"></i>
+                <p>ไม่พบข้อมูลสรุปรายเดือนสำหรับพนักงานในระบบ</p>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Modal: Add Employee -->
@@ -326,12 +610,19 @@
         <input class="form-input" id="f-team" placeholder="ทีม A"/>
       </div>
       <div class="form-group">
-        <label class="form-label">กะเริ่มต้น</label>
+        <label class="form-label">กะ</label>
         <select class="form-input" id="f-shift">
+          <option value="EMPTY">ว่าง (ยังไม่ระบุกะ)</option>
           <option value="MORNING">เช้า (06:00-14:00)</option>
-          <option value="AFTERNOON">บ่าย (14:00-22:00)</option>
-          <option value="NIGHT">ดึก (22:00-06:00)</option>
+          <option value="AFTERNOON">บ่าย (16:00-00:00)</option>
+          <option value="NIGHT">ดึก (00:00-08:00)</option>
         </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="grid-column: span 2;">
+        <label class="form-label">ระบุวันที่ลงเวร</label>
+        <input class="form-input" id="f-date" type="date"/>
       </div>
     </div>
     <div class="form-row">
@@ -358,9 +649,9 @@
 <script>
 // ============ DATA ============
 const SHIFTS = [
-  { id:1, type:'MORNING',   label:'กะเช้า',  time:'06:00-14:00', color:'var(--morning)',  dot:'#ffb347' },
-  { id:2, type:'AFTERNOON', label:'กะบ่าย', time:'14:00-22:00', color:'var(--afternoon)', dot:'#4fc3f7' },
-  { id:3, type:'NIGHT',     label:'กะดึก',   time:'22:00-06:00', color:'var(--night)',    dot:'#9b8ef7' },
+  { id:1, type:'MORNING',   label:'กะเช้า',  time:'06:00-14:00', color:'#D97706',  dot:'#F59E0B' },
+  { id:2, type:'AFTERNOON', label:'กะบ่าย', time:'16:00-00:00', color:'#1D4ED8', dot:'#2563EB' },
+  { id:3, type:'NIGHT',     label:'กะดึก',   time:'00:00-08:00', color:'#6D28D9', dot:'#7C3AED' },
 ];
 
 const DAYS_TH = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
@@ -455,17 +746,19 @@ function renderCalendar() {
         <span>${shift.label}<br><span style="font-size:10px;color:var(--text3);font-family:var(--mono)">${shift.time}</span></span>
       </div>`;
 
-    dates.forEach((_,dayIdx) => {
+    dates.forEach((date,dayIdx) => {
       html += `<div class="shift-cell">`;
-      emps.forEach((emp,ei) => {
-        const rotated = emps[(ei + dayIdx) % emps.length];
-        if (!rotated) return;
-        html += `<div class="emp-chip" title="${rotated.name} · ${rotated.team}" onclick="showEmpDetail(${rotated.id})">
-          <span class="avatar" style="${getAvatarStyle(rotated.id)}">${getInitials(rotated.name)}</span>
-          <span style="color:var(--text2)">${rotated.name.split(' ')[0]}</span>
+      // Specific assignments for this date and shift
+      const dateStr = date.toISOString().split('T')[0];
+      const assigned = employees.filter(e => e.date === dateStr && e.shift === shift.type);
+      
+      assigned.forEach((emp) => {
+        html += `<div class="emp-chip" title="${emp.name} · ${emp.team}" onclick="showEmpDetail(${emp.id}, '${dateStr}')">
+          <span class="avatar" style="${getAvatarStyle(emp.id)}">${getInitials(emp.name)}</span>
+          <span style="color:var(--text2)">${emp.name.split(' ')[0]}</span>
         </div>`;
       });
-      html += `<div class="add-slot" onclick="openAddSlot()" title="เพิ่มพนักงาน">+</div>`;
+      html += `<div class="add-slot" onclick="openAddSlot('${dateStr}')" title="เพิ่มพนักงาน">+</div>`;
       html += `</div>`;
     });
 
@@ -562,22 +855,166 @@ function addNotification(type, title, desc) {
 
 // ============ TABS ============
 function showTab(tab) {
-  ['calendar','team','notify'].forEach(t => {
-    const el = document.getElementById('tab-'+t);
-    el.style.display = t===tab ? 'block' : 'none';
+  const actions = document.getElementById('topbar-actions-panel');
+  if (actions) actions.style.display = tab === 'calendar' ? 'flex' : 'none';
+
+  const tabList = ['calendar', 'team', 'notify', 'daily-report', 'monthly-report'];
+  tabList.forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (!el) return;
+    el.style.display = t === tab ? 'block' : 'none';
     el.classList.remove('fade-in');
-    if (t===tab) setTimeout(()=>el.classList.add('fade-in'),10);
+    if (t === tab) setTimeout(() => el.classList.add('fade-in'), 10);
   });
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  const titles = {calendar:'ตารางเวรประจำสัปดาห์', team:'ทีมพนักงานทั้งหมด', notify:'การแจ้งเตือน'};
-  document.getElementById('topbar-title').textContent = titles[tab] || '';
 
-  const navItems = document.querySelectorAll('.nav-item');
-  const tabIdx = {calendar:0,team:1,notify:2};
-  if (tabIdx[tab] !== undefined) navItems[tabIdx[tab]].classList.add('active');
+  // Sidebar highlights
+  document.querySelectorAll('.sidebar-nav .nav-item').forEach(n => n.classList.remove('active'));
+  const titles = {
+    calendar: 'ตารางเวรประจำสัปดาห์',
+    team: 'รายชื่อพนักงานทั้งหมด',
+    notify: 'การแจ้งเตือน',
+    'daily-report': 'รายงานการเข้างานรายวัน',
+    'monthly-report': 'รายงานสรุปรายเดือน (สถิติพนักงานจัดเวร)'
+  };
+  const titleEl = document.getElementById('topbar-title');
+  if (titleEl) titleEl.textContent = titles[tab] || '';
 
-  if (tab==='team') renderTeam();
-  if (tab==='notify') renderNotifications();
+  // Better highlight logic using index or data-tab (if added)
+  // For now let's find the nav-item that has the showTab call
+  document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
+    const clickAttr = item.getAttribute('onclick') || '';
+    if (clickAttr.includes(`showTab('${tab}')`)) {
+      item.classList.add('active');
+    }
+  });
+
+  if (tab === 'team') renderTeam();
+  if (tab === 'notify') renderNotifications();
+  if (tab === 'daily-report') fetchDailyReportData();
+  if (tab === 'monthly-report') fetchMonthlyReportData();
+}
+
+async function fetchMonthlyReportData() {
+    const month = document.getElementById('monthly-month-input').value;
+    const year = document.getElementById('monthly-year-input').value;
+    const body = document.getElementById('monthly-report-body');
+    const empty = document.getElementById('monthly-report-empty');
+    
+    body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">กำลังรวบรวมข้อมูลประจำเดือน...</td></tr>';
+    
+    try {
+        const res = await fetch(`/api/report/monthly?month=${month}&year=${year}`);
+        const data = await res.json();
+        let report = data.report || [];
+        
+        // Filter by scheduled employees only (if any are scheduled in the system)
+        const scheduledIds = [...new Set(employees.map(e => String(e.id)))];
+        if (scheduledIds.length > 0) {
+            report = report.filter(r => scheduledIds.includes(String(r.id)));
+        }
+        
+        if (report.length === 0) {
+            body.innerHTML = '';
+            empty.style.display = 'block';
+            updateMonthlyStats(0, 0, 0);
+            return;
+        }
+        
+        empty.style.display = 'none';
+        body.innerHTML = report.map(r => `
+            <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:12px; font-weight:500;">${r.name}</td>
+                <td style="padding:12px; text-align:center;">${r.daysWorked} วัน</td>
+                <td style="padding:12px; text-align:center; color:var(--warning); font-weight:600;">${r.lateCount}</td>
+                <td style="padding:12px; text-align:center; color:var(--danger);">${Math.max(0, 22 - r.daysWorked)}</td>
+                <td style="padding:12px; text-align:center; font-weight:700;">${parseFloat(r.totalHours || 0).toFixed(1)} ชม.</td>
+            </tr>
+        `).join('');
+
+        const totalDays = report.reduce((sum, r) => sum + r.daysWorked, 0);
+        const totalHrs = report.reduce((sum, r) => sum + parseFloat(r.totalHours || 0), 0);
+        const totalLate = report.reduce((sum, r) => sum + r.lateCount, 0);
+        updateMonthlyStats(totalDays, totalHrs, totalLate);
+        
+    } catch(err) {
+        body.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red; padding:20px;">เกิดข้อผิดพลาดในการโหลดรายงานรายเดือน</td></tr>';
+    }
+}
+
+function updateMonthlyStats(days, hrs, late) {
+    document.getElementById('monthly-stat-days').textContent = days;
+    document.getElementById('monthly-stat-hours').textContent = hrs.toFixed(1);
+    document.getElementById('monthly-stat-late').textContent = late;
+}
+async function fetchDailyReportData() {
+    const dateInput = document.getElementById('report-date-input');
+    if (!dateInput.value) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+    }
+    const targetDate = dateInput.value;
+    const body = document.getElementById('daily-report-body');
+    const empty = document.getElementById('daily-report-empty');
+    
+    body.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">กำลังโหลดข้อมูล...</td></tr>';
+    
+    try {
+        const res = await fetch(`/api/data?date=${targetDate}`);
+        if (!res.ok) throw new Error('API Error');
+        const data = await res.json();
+        let emps = data.employees || [];
+        
+        // Filter: Keep only employees that are present in our global 'employees' schedule for the targetDate
+        const scheduledIds = employees.filter(e => e.date === targetDate && e.shift && e.shift !== 'EMPTY').map(e => String(e.id));
+        
+        emps = emps.filter(e => scheduledIds.includes(String(e.id)));
+        
+        if (emps.length === 0) {
+            body.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+        
+        empty.style.display = 'none';
+        body.innerHTML = emps.map(e => {
+            let hoursStr = e.hours || '0';
+            // Calculate hours if out time exists and hours is 0
+            if (e.in && e.out && (!e.hours || e.hours === '0' || e.hours === 0)) {
+                try {
+                    const [inH, inM] = e.in.split(':').map(Number);
+                    const [outH, outM] = e.out.split(':').map(Number);
+                    if (!isNaN(inH) && !isNaN(outH)) {
+                        let totalMins = (outH * 60 + outM) - (inH * 60 + inM);
+                        if (totalMins < 0) totalMins += 24 * 60; // handle midnight rollover
+                        const hrs = Math.floor(totalMins / 60);
+                        const mins = totalMins % 60;
+                        hoursStr = `${hrs}.${mins.toString().padStart(2, '0')}`;
+                    }
+                } catch(e) {}
+            }
+            
+            return `
+            <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:12px; font-weight:500;">${e.name}</td>
+                <td style="padding:12px; font-size:12px; color:var(--text2);">${e.dept}</td>
+                <td style="padding:12px; text-align:center;">
+                    <span class="tag ${e.status === 'in' ? 'tag-morning' : e.status === 'late' ? 'tag-morning' : e.status === 'out' ? 'tag-night' : 'tag-empty'}">
+                        ${e.status === 'in' ? 'เข้างาน' : e.status === 'late' ? 'มาสาย' : e.status === 'out' ? 'ออกงาน' : 'ยังไม่มา'}
+                    </span>
+                </td>
+                <td style="padding:12px; text-align:center; font-family:var(--mono);">${e.in || '-'}</td>
+                <td style="padding:12px; text-align:center; font-family:var(--mono);">${e.out || '-'}</td>
+                <td style="padding:12px; text-align:center; font-weight:600; color:var(--accent);">${hoursStr} ชม.</td>
+            </tr>
+        `}).join('');
+        
+    } catch(err) {
+        body.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red; padding:20px;">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+    }
+}
+
+function toggleSidebar() {
+  const s = document.getElementById('shift-sidebar');
+  if (s) s.classList.toggle('collapsed');
 }
 
 // ============ WEEK NAV ============
@@ -585,26 +1022,62 @@ function prevWeek() { currentWeekOffset--; renderCalendar(); }
 function nextWeek() { currentWeekOffset++; renderCalendar(); }
 function goToday()  { currentWeekOffset=0; renderCalendar(); }
 
+function jumpToSpecificDate(dateStr) {
+  if (!dateStr) return;
+  const target = new Date(dateStr);
+  const today = new Date();
+  
+  // Set to midnight for clean comparison
+  target.setHours(0,0,0,0);
+  today.setHours(0,0,0,0);
+  
+  // Find Monday of the current week (today's week)
+  const todayDow = today.getDay();
+  const currentMonday = new Date(today);
+  currentMonday.setDate(today.getDate() - (todayDow === 0 ? 6 : todayDow - 1));
+  
+  // Find Monday of the target week (selected date's week)
+  const targetDow = target.getDay();
+  const targetMonday = new Date(target);
+  targetMonday.setDate(target.getDate() - (targetDow === 0 ? 6 : targetDow - 1));
+  
+  // Diff in weeks
+  const diffMs = targetMonday.getTime() - currentMonday.getTime();
+  const diffWeeks = Math.round(diffMs / (1000 * 60 * 60 * 24 * 7));
+  
+  currentWeekOffset = diffWeeks;
+  renderCalendar();
+}
+
 // ============ MODAL ============
 
 function closeModalDirect() { document.getElementById('shift-modal-overlay').classList.remove('open'); }
 function closeModal(e) { if(e.target===document.getElementById('shift-modal-overlay')) closeModalDirect(); }
 
-function openAddSlot() { openAddEmpModal(); }
+function openAddSlot(date) {
+  openAddEmpModal();
+  if (date) document.getElementById('f-date').value = date;
+}
 
 let editId = null;
 
 function openAddEmpModal() {
   editId = null;
   document.getElementById('shift-modal-title').textContent = 'เพิ่มพนักงาน (ตารางเวร)';
-  ['name','no','team','email','phone'].forEach(f=>document.getElementById('f-'+f).value='');
+  ['name','no','team','email','phone','date'].forEach(f=>document.getElementById('f-'+f).value='');
   document.getElementById('f-shift').value='MORNING';
+  
+  // set default date to today
+  if (!document.getElementById('f-date').value) {
+    document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  }
+  
   document.getElementById('btn-delete').style.display = 'none';
   document.getElementById('shift-modal-overlay').classList.add('open');
 }
 
-function showEmpDetail(id) {
-  const emp = employees.find(e=>e.id===id);
+function showEmpDetail(id, date) {
+  const emp = employees.find(e=>e.id===id && (!date || e.date === date));
   if (!emp) return;
   editId = id;
   document.getElementById('shift-modal-title').textContent = 'แก้ไขตารางเวร';
@@ -612,6 +1085,7 @@ function showEmpDetail(id) {
   document.getElementById('f-no').value = emp.no;
   document.getElementById('f-team').value = emp.team;
   document.getElementById('f-shift').value = emp.shift || 'EMPTY';
+  document.getElementById('f-date').value = emp.date || '';
   document.getElementById('f-email').value = emp.email;
   document.getElementById('f-phone').value = emp.phone;
   
@@ -623,82 +1097,138 @@ async function saveEmployee() {
   const name = document.getElementById('f-name').value.trim();
   if (!name) { showToast('⚠️ กรุณากรอกชื่อพนักงาน'); return; }
   
-  let targetEmp;
-  if (editId) {
-    targetEmp = employees.find(e=>e.id===editId);
-    if (targetEmp) {
-      targetEmp.name = name;
-      targetEmp.no = document.getElementById('f-no').value;
-      targetEmp.team = document.getElementById('f-team').value;
-      targetEmp.shift = document.getElementById('f-shift').value;
-      targetEmp.email = document.getElementById('f-email').value;
-      targetEmp.phone = document.getElementById('f-phone').value;
-    }
-  } else {
-    // Determine max ID
-    const maxId = employees.length > 0 ? Math.max(...employees.map(e => e.id)) : 0;
-    targetEmp = {
-      id: maxId + 1,
-      real_id: document.getElementById('f-no').value,
-      name,
-      no: document.getElementById('f-no').value,
-      team: document.getElementById('f-team').value,
-      shift: document.getElementById('f-shift').value,
-      email: document.getElementById('f-email').value,
-      phone: document.getElementById('f-phone').value,
-    };
-    employees.push(targetEmp);
-  }
+  const emp_id = document.getElementById('f-no').value;
+  const shift = document.getElementById('f-shift').value;
+  const date = document.getElementById('f-date').value;
+
+  if (!date) { showToast('⚠️ กรุณาเลือกวันที่'); return; }
   
   // Save to backend
   try {
-    await fetch('/api/schedule', {
+    const res = await fetch('/api/schedule', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ emp_id: targetEmp.real_id || targetEmp.id, shift: targetEmp.shift })
+      body: JSON.stringify({ emp_id, shift, date })
     });
-    showToast('✅ บันทึกข้อมูล ' + name + ' เรียบร้อยแล้ว');
-    addNotification('success', editId ? 'อัปเดตข้อมูลพนักงาน' : 'เพิ่มพนักงานใหม่', `พนักงาน ${name} ถูกบันทึกลงในตารางเวรเรียบร้อยแล้ว`);
+    if (res.ok) {
+        showToast('✅ บันทึกข้อมูล ' + name + ' เรียบร้อยแล้ว');
+        addNotification('success', editId ? 'อัปเดตข้อมูลพนักงาน' : 'เพิ่มพนักงานใหม่', `พนักงาน ${name} ถูกบันทึกลงในตารางเวรเรียบร้อยแล้ว`);
+        await loadEmployees(); // Refresh data from backend
+    }
   } catch (err) {
     console.error(err);
-    showToast('⚠️ ไม่สามารถบันทึกลงฐานข้อมูลได้ (ระบบจำลองทำงานต่อได้)');
+    showToast('⚠️ ไม่สามารถบันทึกลงฐานข้อมูลได้');
   }
   
   closeModalDirect();
-  renderCalendar();
-  if (document.getElementById('tab-team').style.display !== 'none') renderTeam();
-  updateStats();
 }
 
 async function deleteEmployee() {
   if (!editId) return;
+  const name = document.getElementById('f-name').value;
+  const emp_id = document.getElementById('f-no').value;
+  const date = document.getElementById('f-date').value;
+
   if (confirm('คุณต้องการลบพนักงานคนนี้ออกจากตารางเวรใช่หรือไม่?')) {
-    const targetEmp = employees.find(e=>e.id===editId);
-    employees = employees.filter(e => e.id !== editId);
-    
     // Remote delete backend
     try {
-      await fetch('/api/schedule', {
+      const res = await fetch('/api/schedule', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emp_id: targetEmp?.real_id || targetEmp?.id, shift: 'EMPTY' }) // Reset to empty acts as deleting the schedule
+        body: JSON.stringify({ emp_id, shift: 'EMPTY', date }) // Reset to empty for date acts as deleting
       });
-      showToast('🗑 ลบข้อมูลเรียบร้อยแล้ว');
-      addNotification('alert', 'ลบข้อมูลพนักงาน', `พนักงาน ${targetEmp?.name} ถูกลบออกจากตารางเวรแล้ว`);
+      if (res.ok) {
+          showToast('🗑 ลบข้อมูลเรียบร้อยแล้ว');
+          addNotification('alert', 'ลบข้อมูลพนักงาน', `พนักงาน ${name} ถูกลบออกจากตารางเวรแล้ว`);
+          await loadEmployees();
+      }
     } catch (err) {}
     
     closeModalDirect();
-    renderCalendar();
-    if (document.getElementById('tab-team').style.display !== 'none') renderTeam();
-    updateStats();
   }
 }
 
 function exportExcel() {
-  showToast('📊 กำลัง Export Excel… (เชื่อมต่อ /api/export/excel)');
+  const currentTabId = ['calendar', 'team', 'notify', 'daily-report'].find(t => document.getElementById('tab-' + t).style.display !== 'none');
+  const title = document.getElementById('topbar-title').innerText;
+  const fileName = (title || 'export') + '.xlsx';
+
+  showToast('📊 กำลังส่งออกข้อมูลเป็น Excel...');
+
+  if (currentTabId === 'daily-report') {
+    // Manually build rows to exclude Department (2nd column)
+    const headers = ['ชื่อ-นามสกุล', 'สถานะ', 'เวลาเข้า', 'เวลาออก', 'รวมเวลา'];
+    const tableBody = document.getElementById('daily-report-body');
+    const rows = Array.from(tableBody.querySelectorAll('tr')).map(tr => {
+      const tds = tr.querySelectorAll('td');
+      return [
+        tds[0].innerText, // Name
+        tds[2].innerText, // Status
+        tds[3].innerText, // In
+        tds[4].innerText, // Out
+        tds[5].innerText  // Hours
+      ];
+    });
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "DailyReport");
+    XLSX.writeFile(wb, fileName);
+  } else if (currentTabId === 'team') {
+    // Build array from employees data - Exclude team
+    const headers = ['รหัสพนักงาน', 'ชื่อ-นามสกุล', 'เบอร์โทรศัพท์', 'อีเมล'];
+    const rows = employees.map(e => [e.no, e.name, e.phone, e.email]);
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "PersonnelList");
+    XLSX.writeFile(wb, fileName);
+  } else if (currentTabId === 'calendar') {
+    // Custom Weekly Grid export
+    const dates = getWeekDates(currentWeekOffset);
+    const dateHeaders = ['Shift / Date', ...dates.map(d => d.toLocaleDateString('th-TH', {day:'2-digit', month:'2-digit'}))];
+    
+    // Create rows for each shift
+    const rows = SHIFTS.map(shift => {
+      const row = [shift.label];
+      dates.forEach(date => {
+        const dateStr = date.toISOString().split('T')[0];
+        const assigned = employees.filter(e => e.date === dateStr && e.shift === shift.type);
+        row.push(assigned.map(e => e.name).join(', '));
+      });
+      return row;
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet([dateHeaders, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "WeeklySchedule");
+    XLSX.writeFile(wb, fileName);
+  } else if (currentTabId === 'monthly-report') {
+    const table = document.querySelector('#monthly-report-body').parentElement;
+    if (table) {
+      const wb = XLSX.utils.table_to_book(table);
+      XLSX.writeFile(wb, fileName);
+    }
+  } else {
+    showToast('⚠️ หน้าปัจจุบันไม่รองรับการส่งออก Excel');
+  }
 }
 function exportPDF() {
-  showToast('📄 กำลัง Export PDF… (เชื่อมต่อ /api/export/pdf)');
+  const currentTabId = ['calendar', 'team', 'notify', 'daily-report'].find(t => document.getElementById('tab-' + t).style.display !== 'none');
+  const element = document.getElementById('tab-' + (currentTabId || 'calendar'));
+  const title = document.getElementById('topbar-title').innerText;
+  const date = new Date().toLocaleDateString('th-TH');
+
+  showToast('📄 กำลังสร้างไฟล์ PDF สำหรับ: ' + title);
+
+  const opt = {
+    margin: 10,
+    filename: (title || 'report') + '_' + date + '.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+  };
+
+  // Temporarily improve layout for PDF if needed
+  html2pdf().from(element).set(opt).save();
 }
 
 // ============ TOAST ============
@@ -725,18 +1255,34 @@ async function loadEmployees() {
       scheduleData = await scheduleRes.json();
     }
     
-    employees = personnelList.map((p, idx) => {
-      const assigned = scheduleData.find(s => s.emp_id === p.FINGLE_ID || s.emp_id === p.ID);
-      return {
+    employees = personnelList.flatMap((p, idx) => {
+      const pAssignments = scheduleData.filter(s => s.emp_id === p.FINGLE_ID || s.emp_id === p.ID);
+      
+      if (pAssignments.length === 0) {
+          return [{
+            id: p.ID || idx + 1,
+            real_id: p.FINGLE_ID || p.ID,
+            name: p.HR_FNAME ? `${p.HR_FNAME} ${p.HR_LNAME}` : (p.Name || 'ไม่ระบุชื่อ'),
+            no: p.FINGLE_ID || p.EmployeeNo || '-',
+            team: p.HR_DEPARTMENT_NAME || p.Department || 'ไม่ระบุแผนก',
+            shift: 'EMPTY',
+            date: '',
+            email: p.HR_EMAIL || ((p.FINGLE_ID||'emp') + '@khh.co.th'),
+            phone: p.HR_PHONE || p.Phone || '-'
+          }];
+      }
+
+      return pAssignments.map(assigned => ({
         id: p.ID || idx + 1,
-        real_id: p.FINGLE_ID || p.ID, // for DB linking
+        real_id: p.FINGLE_ID || p.ID,
         name: p.HR_FNAME ? `${p.HR_FNAME} ${p.HR_LNAME}` : (p.Name || 'ไม่ระบุชื่อ'),
         no: p.FINGLE_ID || p.EmployeeNo || '-',
         team: p.HR_DEPARTMENT_NAME || p.Department || 'ไม่ระบุแผนก',
-        shift: assigned ? assigned.shift : 'EMPTY',
+        shift: assigned.shift,
+        date: assigned.date || '',
         email: p.HR_EMAIL || ((p.FINGLE_ID||'emp') + '@khh.co.th'),
         phone: p.HR_PHONE || p.Phone || '-'
-      };
+      }));
     });
     
     renderCalendar();
@@ -760,9 +1306,6 @@ loadEmployees();
 updateNotifBadge(); // Initial badge count
 </script>
 
-</div>
-
-  </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

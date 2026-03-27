@@ -84,9 +84,11 @@
                       class="bi bi-calendar3" style="color:var(--muted)"></i></span>
                   <input type="date" class="form-control" id="dateInput" style="border-radius:0 8px 8px 0;" />
                 </div>
-                <select class="form-select" style="max-width:150px;" id="shiftFilter" onchange="applyFilter()"
-                  style="display:none;">
+                <select class="form-select" style="max-width:120px;" id="shiftFilter" onchange="applyFilter()">
                   <option value="all">ทุกกะ</option>
+                  <option value="morning">เช้า</option>
+                  <option value="afternoon">บ่าย</option>
+                  <option value="night">ดึก</option>
                 </select>
                 <select class="form-select" style="max-width:170px;" id="deptFilter" onchange="applyFilter()">
                   <option value="">ทุกกลุ่มงาน</option>
@@ -104,13 +106,7 @@
                   <option>กลุ่มงานจิตเวชและยาเสพติด</option>
                   <option>กลุ่มงานการแพทย์</option>
                 </select>
-                <select class="form-select" style="max-width:155px;" id="statusFilter" onchange="applyFilter()">
-                  <option value="">ทุกสถานะ</option>
-                  <option>เข้างาน</option>
-                  <option>ออกงาน</option>
-                  <option>มาสาย</option>
-                  <option>ขาดงาน</option>
-                </select>
+
                 <input type="text" class="form-control" placeholder="ค้นหาชื่อ / รหัส..." style="max-width:190px;"
                   id="searchInput" oninput="applyFilter()" />
               </div>
@@ -120,18 +116,7 @@
               </div>
             </div>
 
-            <!-- DEPT TABS -->
-            <div class="d-flex align-items-center justify-content-between mb-2 mt-4" style="overflow-x:auto;">
-              <div class="shift-tabs" id="deptTabs" style="display:flex; gap:8px; padding-bottom:10px;">
-                <button class="shift-tab active all" data-tab="all" onclick="switchTab('all',this)"
-                  style="white-space:nowrap;">
-                  <i class="bi bi-grid-3x3-gap"></i> รวมทุกกลุ่มงาน <span class="tab-badge" id="badge-all"
-                    style="background:#E2E8F0;color:#475569;">0</span>
-                </button>
 
-                <!-- Rendered by JS -->
-              </div>
-            </div>
             <div style="font-size:12px;color:var(--muted);text-align:right;margin-bottom:10px;">แสดง <span
                 id="rowCountSpan">0</span> รายการ</div>
 
@@ -185,9 +170,9 @@
                 <div class="panel-head">
                   <div>
                     <div class="panel-title">ประวัติสแกนล่าสุด</div>
-                    <div class="panel-sub">Real-time activity feed</div>
+                    <div class="panel-sub">การเคลื่อนไหวแบบเรียลไทม์</div>
                   </div>
-                  <div class="live-pill"><span class="live-dot"></span> Live</div>
+                  <div class="live-pill"><span class="live-dot"></span> สด</div>
                 </div>
                 <div class="tl-list" id="timeline"></div>
               </div>
@@ -255,7 +240,7 @@
           /* ================================================================
              STATE
           ================================================================ */
-          let activeTab = 'all';
+
           let currentPage = 1;
           const PER_PAGE = 8;
           let filteredData = [];
@@ -291,41 +276,10 @@
              TAB BADGES
           ================================================================ */
           function renderBadges() {
-            document.getElementById('badge-all').textContent = employees.length;
-            const tabsContainer = document.getElementById('deptTabs');
-
-            // Keep the 'all' button
-            let tabsHtml = `<button class="shift-tab active all" data-tab="all" onclick="switchTab('all',this)" style="white-space:nowrap;">
-    <i class="bi bi-grid-3x3-gap"></i> รวมทุกกลุ่มงาน <span class="tab-badge" id="badge-all" style="background:#E2E8F0;color:#475569;">${employees.length}</span>
-  </button>`;
-
-            DEPTS.forEach((dept, i) => {
-              const count = employees.filter(e => e.dept === dept).length;
-              tabsHtml += `<button class="shift-tab" data-tab="${dept}" onclick="switchTab('${dept}',this)" style="white-space:nowrap;">
-      ${dept} <span class="tab-badge" style="background:#E2E8F0;color:#475569;">${count}</span>
-    </button>`;
-            });
-
-            tabsContainer.innerHTML = tabsHtml;
+            // Logic for department tabs removed
           }
 
-          /* ================================================================
-             TAB SWITCH
-          ================================================================ */
-          function switchTab(tab, btn) {
-            activeTab = tab;
-            document.querySelectorAll('.shift-tab').forEach(b => b.classList.remove('active'));
-            if (btn) {
-              btn.classList.add('active');
-            } else {
-              // Escape quotes if dept name has them, but our DEPTs don't
-              const found = document.querySelector(`.shift-tab[data-tab="${tab}"]`);
-              if (found) found.classList.add('active');
-            }
-            // sync dropdown
-            document.getElementById('deptFilter').value = tab === 'all' ? '' : tab;
-            applyFilter();
-          }
+
 
           /* ================================================================
              FILTER & TABLE
@@ -333,26 +287,15 @@
           function applyFilter() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const dept = document.getElementById('deptFilter').value;
-            const status = document.getElementById('statusFilter').value;
-
-            // sync tab if filtered via dropdown
-            if (dept !== '' && activeTab !== dept) {
-              activeTab = dept;
-              document.querySelectorAll('.shift-tab').forEach(b => b.classList.remove('active'));
-              const found = document.querySelector(`.shift-tab[data-tab="${dept}"]`);
-              if (found) found.classList.add('active');
-            } else if (dept === '' && activeTab !== 'all') {
-              activeTab = 'all';
-              document.querySelectorAll('.shift-tab').forEach(b => b.classList.remove('active'));
-              const found = document.querySelector(`.shift-tab[data-tab="all"]`);
-              if (found) found.classList.add('active');
-            }
+            // const status = document.getElementById('statusFilter').value; // removed
+            const shift = document.getElementById('shiftFilter').value;
 
             filteredData = employees.filter(e => {
-              const matchDept = activeTab === 'all' || e.dept === activeTab;
-              const matchStatus = !status || e.status === status;
+              const matchDept = !dept || e.dept === dept;
+              // const matchStatus = !status || e.status === status; // removed
+              const matchShift = shift === 'all' || e.shift === shift;
               const matchSearch = !search || e.name.toLowerCase().includes(search) || (e.id && e.id.toLowerCase().includes(search));
-              return matchDept && matchStatus && matchSearch;
+              return matchDept && matchShift && matchSearch;
             });
             currentPage = 1;
             renderTable();
@@ -387,7 +330,7 @@
 
               // Fallback status if empty
               const stat = e.status || '';
-              const shiftDisplay = (e.shift && e.shift !== '') ? (e.shift === 'morning' ? 'เช้า' : e.shift) : '-';
+              const shiftDisplay = (e.shift && SHIFTS[e.shift.toLowerCase()]) ? SHIFTS[e.shift.toLowerCase()].label : (e.shift || '-');
 
               let statusHtml = STATUS_CHIP[stat] || stat;
               if (stat === 'leave' && e.leave_status) {
@@ -437,7 +380,15 @@
             prev.className = 'page-item' + (currentPage === 1 ? ' disabled' : '');
             prev.innerHTML = `<a class="page-link" href="#" onclick="goPage(${currentPage - 1})">&laquo;</a>`;
             ul.appendChild(prev);
-            for (let p = 1; p <= totalPages; p++) {
+            // Show maximum 5 pages around current page
+            let maxShow = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxShow / 2));
+            let endPage = Math.min(totalPages, startPage + maxShow - 1);
+            if (endPage - startPage + 1 < maxShow) {
+              startPage = Math.max(1, endPage - maxShow + 1);
+            }
+
+            for (let p = startPage; p <= endPage; p++) {
               const li = document.createElement('li');
               li.className = 'page-item' + (p === currentPage ? ' active' : '');
               li.innerHTML = `<a class="page-link" href="#" onclick="goPage(${p})">${p}</a>`;

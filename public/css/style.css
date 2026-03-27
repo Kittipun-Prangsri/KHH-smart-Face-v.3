@@ -28,7 +28,16 @@
 body{font-family:'Sarabun',sans-serif;background:var(--surface);color:var(--text);min-height:100vh;}
 
 /* SIDEBAR */
-.sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--gradient);position:fixed;left:0;top:0;z-index:300;display:flex;flex-direction:column;transition:transform .3s;box-shadow:4px 0 20px rgba(11,48,96,.18);}
+.sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--gradient);position:fixed;left:0;top:0;z-index:300;display:flex;flex-direction:column;transition:all .3s;box-shadow:4px 0 20px rgba(11,48,96,.18);overflow:hidden;}
+.sidebar.collapsed{width:70px;}
+.sidebar.collapsed .sb-logo h5, .sidebar.collapsed .sb-logo small, .sidebar.collapsed .sb-sec, .sidebar.collapsed .sb-link span, .sidebar.collapsed .sb-uname, .sidebar.collapsed .sb-urole, .sidebar.collapsed .sb-foot > div > div:last-child {display:none;}
+.sidebar.collapsed .sb-link{justify-content:center;padding:12px 0;}
+.sidebar.collapsed .sb-link i{font-size:18px;margin:0;}
+.sidebar.collapsed .sb-logo{padding:20px 0;text-align:center;}
+.sidebar.collapsed .sb-logo-icon{margin:0 auto;}
+.sidebar.collapsed .sb-foot{padding:14px 0;text-align:center;}
+.sidebar.collapsed .sb-user{padding:9px 0;justify-content:center;}
+.sidebar.collapsed .sb-user i.ms-auto{display:none;}
 .sb-logo{padding:24px 20px 18px;border-bottom:1px solid rgba(255,255,255,.1);}
 .sb-logo-icon{width:40px;height:40px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px;color:#fff;margin-bottom:8px;}
 .sb-logo h5{font-size:14px;font-weight:700;color:#fff;margin:0;}
@@ -45,7 +54,8 @@ body{font-family:'Sarabun',sans-serif;background:var(--surface);color:var(--text
 .sb-urole{font-size:10.5px;color:rgba(255,255,255,.4);}
 
 /* MAIN */
-.main{margin-left:var(--sidebar-w);min-height:100vh;}
+.main{margin-left:var(--sidebar-w);min-height:100vh;transition:all .3s;}
+.main.expanded{margin-left:70px;}
 .topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(11,48,96,.07);}
 .topbar-left h6{font-size:16px;font-weight:700;color:var(--primary);margin:0;}
 .topbar-left small{font-size:11.5px;color:var(--muted);}

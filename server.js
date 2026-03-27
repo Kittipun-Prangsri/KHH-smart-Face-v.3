@@ -54,6 +54,21 @@ app.get('/api/data', async (req, res) => {
     const lateM = (lateTotalMinutes % 60).toString().padStart(2, '0');
     const lateThresholdTime = `${lateH}:${lateM}:00`;
 
+    // Load schedule mapping
+    let shiftMap = {};
+    try {
+      if (fs.existsSync(SCHEDULE_FILE)) {
+        const sched = JSON.parse(fs.readFileSync(SCHEDULE_FILE, 'utf8'));
+        sched.forEach(s => {
+          if (s.emp_id && s.shift) {
+            shiftMap[s.emp_id] = s.shift.toLowerCase();
+          }
+        });
+      }
+    } catch (e) {
+      console.error('Shift load error:', e);
+    }
+
     // 1. Fetch live unified employees summary
     const [employees] = await hosofficePool.query(`
       SELECT 
@@ -90,6 +105,11 @@ app.get('/api/data', async (req, res) => {
       WHERE p.HR_STATUS_ID IN ('01', '02', '03', '04', '09')
       ORDER BY d.HR_DEPARTMENT_ID, p.FINGLE_ID
     `, [lateThresholdTime, targetDateStr, targetMonth]);
+    
+    // Map shifts
+    employees.forEach(e => {
+      if (shiftMap[e.id]) e.shift = shiftMap[e.id];
+    });
     
     // 2. Fetch realtime live scans from Hikvision (limited to the target date)
     const [liveScans] = await hosofficePool.query(`
@@ -153,6 +173,49 @@ app.get('/api/data', async (req, res) => {
   }
 });
 
+// GET Monthly Summary Report aggregated by employees
+app.get('/api/report/monthly', async (req, res) => {
+  try {
+    const { month, year } = req.query;
+    const targetMonth = `${year}-${month.toString().padStart(2, '0')}`;
+    const workStart = '08:00'; // Default, follow same logic as /api/data if possible
+    const lateMin = 31;
+    const [h, m] = workStart.split(':').map(Number);
+    const lateThreshold = (h * 60 + m + lateMin);
+    const lateThresholdTime = `${Math.floor(lateThreshold/60).toString().padStart(2,'0')}:${(lateThreshold%60).toString().padStart(2,'0')}:00`;
+
+    const [monthlyData] = await hosofficePool.query(`
+      SELECT 
+        p.FINGLE_ID AS id,
+        CONCAT(p.HR_FNAME, ' ', p.HR_LNAME) AS name,
+        d.HR_DEPARTMENT_NAME AS dept,
+        COUNT(DISTINCT h.AccessDate) as daysWorked,
+        SUM(CASE WHEN h.time_in > ? THEN 1 ELSE 0 END) as lateCount,
+        SUM(TIMESTAMPDIFF(MINUTE, h.time_in, h.time_out)) / 60 as totalHours
+      FROM hr_person p
+      LEFT JOIN hr_department d ON p.HR_DEPARTMENT_ID = d.HR_DEPARTMENT_ID
+      LEFT JOIN (
+        SELECT 
+          EmployeeID, 
+          AccessDate,
+          MIN(AccessTime) as time_in,
+          MAX(AccessTime) as time_out
+        FROM hikvision 
+        WHERE AccessDate LIKE ? 
+        GROUP BY EmployeeID, AccessDate
+      ) h ON p.FINGLE_ID = h.EmployeeID
+      WHERE p.HR_STATUS_ID IN ('01', '02', '03', '04', '09')
+      GROUP BY p.FINGLE_ID
+      HAVING daysWorked > 0
+    `, [lateThresholdTime, `${targetMonth}-%`]);
+
+    res.json({ success: true, report: monthlyData });
+  } catch (error) {
+    console.error('Monthly Report Error:', error);
+    res.status(500).json({ success: false, report: [] });
+  }
+});
+
 // API Endpoints for Shift Scheduling
 const SCHEDULE_FILE = path.join(__dirname, 'data', 'schedule.json');
 
@@ -172,16 +235,17 @@ app.get('/api/schedule', (req, res) => {
 
 app.post('/api/schedule', (req, res) => {
   try {
-    const { emp_id, shift } = req.body;
+    const { emp_id, shift, date } = req.body;
     let schedule = [];
     if (fs.existsSync(SCHEDULE_FILE)) {
       schedule = JSON.parse(fs.readFileSync(SCHEDULE_FILE, 'utf8'));
     }
     
-    // update or remove
-    schedule = schedule.filter(s => s.emp_id !== emp_id);
+    // update or remove based on both emp_id and date
+    schedule = schedule.filter(s => !(s.emp_id === emp_id && s.date === date));
+    
     if (shift && shift !== 'EMPTY') {
-      schedule.push({ emp_id, shift });
+      schedule.push({ emp_id, shift, date });
     }
     
     // ensure dir
