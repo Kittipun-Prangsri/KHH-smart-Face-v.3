@@ -34,31 +34,85 @@
 </div>
 
 <script>
-  // Actual Logged-in User Role from Session
-  const CURRENT_ROLE = "<%= (locals.user && user.role) ? user.role : 'staff' %>";
-  const RBAC_ENABLED = false; // ปิดระบบสิทธิ์ชั่วคราว
-  console.log('Current User Role:', CURRENT_ROLE, '| RBAC_ENABLED:', RBAC_ENABLED);
+  // Dashboard Initialization: Store User Role from Session to localStorage
+  const sessionRole = "<%= (locals.user && user.role) ? user.role : 'staff' %>";
+  localStorage.setItem('userRole', sessionRole);
+  const CURRENT_ROLE = localStorage.getItem('userRole');
+  const CURRENT_USER_ID = "<%= (locals.user && user.username) ? user.username : '' %>";
+  
+  const RBAC_ENABLED = true; // เปิดระบบ RBAC แล้ว
+  console.log('Current User Role:', CURRENT_ROLE, '| User ID:', CURRENT_USER_ID, '| RBAC_ENABLED:', RBAC_ENABLED);
 
+  // Load appPermissions from localStorage
+  const appPermissions = JSON.parse(localStorage.getItem('APP_PERMISSIONS')) || {
+    admin: ['view_dashboard', 'view_phone', 'view_email', 'edit_staff', 'delete_staff', 'manage_permissions'],
+    staff: ['view_dashboard']
+  };
+
+  // Global Check Permission
   function checkPermission(capability) {
     if (!RBAC_ENABLED) return true;
-    if (capability === 'view_dashboard') return true;
-    return CURRENT_ROLE === 'admin';
+    if (CURRENT_ROLE === 'admin') return true;
+    return appPermissions[CURRENT_ROLE] && appPermissions[CURRENT_ROLE].includes(capability);
   }
 
-  function maskSensitiveData(str, capability) {
+  // Enforce UI restrictions based on role
+  document.addEventListener("DOMContentLoaded", () => {
+     if (CURRENT_ROLE === 'staff') {
+         // Disable settings menu icon in topbar
+         const settingsBtn = document.querySelector('[onclick="openSettings()"]');
+         if(settingsBtn) {
+             settingsBtn.style.pointerEvents = 'none';
+             settingsBtn.style.opacity = '0.5';
+         }
+
+         // Disable permissions menu in sidebar (if exists)
+         const permissionsMenu = document.querySelector('a[href="/admin/permissions"]');
+         if(permissionsMenu) {
+             permissionsMenu.style.display = 'none';
+         }
+     }
+  });
+
+  function maskSensitiveData(str, capability, dataOwnerId) {
     if (!RBAC_ENABLED) return str;
     if (!str || str === '-') return '-';
+    // Owner of the data sees everything
+    if (dataOwnerId && String(dataOwnerId) === String(CURRENT_USER_ID)) return str;
     // Admin sees everything
     if (checkPermission(capability)) return str;
     
-    // Masking phone example: 08x-xxx-xxxx
+    // Masking phone example: 09xxxx
     if (capability === 'view_phone') {
-        return '08x-xxx-xxxx';
+        return str.substring(0, 2) + '*'.repeat(Math.max(0, str.length - 2)); 
     }
-    // Masking email: m****@****.com
+    // Masking email: ITx****@hotmail.com
     if (capability === 'view_email') {
-        return '********'; // completely hide email
+        const parts = str.split('@');
+        if(parts.length === 2) {
+           return parts[0].substring(0, 2) + '***@' + parts[1];
+        }
+        return '********';
     }
+    // Masking Name: นาย xxx
+    if (capability === 'view_name') {
+        const titles = ['นายแพทย์', 'พญ.', 'นพ.', 'นาย', 'นางสาว', 'นาง'];
+        let title = '';
+        let bareName = str;
+        for (let t of titles) {
+            if (str.startsWith(t)) {
+                title = t + ' ';
+                bareName = str.substring(t.length).trim();
+                break;
+            }
+        }
+        return title + 'x'.repeat(bareName.length > 0 ? bareName.length : 3);
+    }
+    // Masking ID: KHH00023 -> ***
+    if (capability === 'view_id') {
+        return '***';
+    }
+    
     return '********';
   }
 </script>

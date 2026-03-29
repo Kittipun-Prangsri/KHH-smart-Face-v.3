@@ -342,7 +342,8 @@
                 : `<span style="font-size:12px;color:var(--muted)">-</span>`;
               const otHtml = e.ot ? `<span class="status-chip chip-ot">${e.ot}</span>` : `<span style="font-size:12px;color:var(--muted)">-</span>`;
 
-              const adminCols = (!RBAC_ENABLED || CURRENT_ROLE === 'admin') ? `
+              const hasAdminAccess = checkPermission('edit_staff');
+              const adminCols = hasAdminAccess ? `
       <td>${confHtml}</td>
       <td>
         <div style="display:flex;gap:4px;">
@@ -353,12 +354,12 @@
 
               return `<tr>
       <td style="color:var(--muted);font-size:11.5px;">${start + i + 1}</td>
-      <td onclick="if(!RBAC_ENABLED || CURRENT_ROLE==='admin'){openStaffDetail('${e.id}')}" style="cursor:(!RBAC_ENABLED || CURRENT_ROLE==='admin')?'pointer':'default';">
+      <td onclick="if(hasAdminAccess){openStaffDetail('${e.id}')}" style="cursor:hasAdminAccess?'pointer':'default';">
         <div style="display:flex;align-items:center;gap:9px;">
           <div class="av" style="background:${color}">${init}</div>
           <div>
-            <div style="font-size:13px;font-weight:600;color:var(--primary);${(!RBAC_ENABLED || CURRENT_ROLE==='admin')?'text-decoration:underline dotted;text-underline-offset:3px;':''}">${e.name || 'ไม่มีชื่อ'}</div>
-            <div style="font-size:11px;color:var(--muted);">${e.id || ''} ${e.role || ''}</div>
+            <div style="font-size:13px;font-weight:600;color:var(--primary);${hasAdminAccess?'text-decoration:underline dotted;text-underline-offset:3px;':''}">${maskSensitiveData(e.name || 'ไม่มีชื่อ', 'view_name', e.id)}</div>
+            <div style="font-size:11px;color:var(--muted);">${maskSensitiveData(e.id || '', 'view_id', e.id)} ${e.role || ''}</div>
           </div>
         </div>
       </td>
@@ -377,7 +378,7 @@
             document.getElementById('pagerInfo').textContent = `แสดง ${start + 1}–${Math.min(start + PER_PAGE, filteredData.length)} จาก ${filteredData.length} รายการ`;
             
             // Hide admin headers if staff and RBAC is enabled
-            if(RBAC_ENABLED && CURRENT_ROLE !== 'admin') {
+            if(!checkPermission('edit_staff')) {
               document.querySelectorAll('.admin-col').forEach(el => el.style.display = 'none');
             } else {
               document.querySelectorAll('.admin-col').forEach(el => el.style.display = '');
@@ -438,7 +439,7 @@
               return `<div class="tl-item">
       <div class="tl-icon ${cls}"><i class="bi ${ic}"></i></div>
       <div class="tl-body">
-        <div class="tl-name">${t.name}</div>
+        <div class="tl-name">${maskSensitiveData(t.name, 'view_name', t.id)}</div>
         <div class="tl-meta">${t.dept}${shiftLabel}${locationLabel}${tempLabel} · ${t.action}</div>
       </div>
       <div class="tl-time">${t.time}</div>
@@ -461,7 +462,7 @@
             tbody.innerHTML = serviceWorkData.map(s => {
               return `<tr>
                 <td>
-                  <div style="font-weight:600;">${s.name}</div>
+                  <div style="font-weight:600;">${maskSensitiveData(s.name, 'view_name', s.id)}</div>
                   <div style="font-size:10px; color:var(--muted);">${s.dept}</div>
                 </td>
                 <td><span class="status-chip" style="background:#E0F2FE; color:#0369A1; border-color:#BAE6FD;">${s.morning || '-'}</span></td>
@@ -1637,8 +1638,8 @@ async function saveStaffEdit() {
     document.getElementById('sdmEmail').textContent         = email;
     document.getElementById('sdmNicknameField').textContent = nickname;
     document.getElementById('sdmNickname').textContent      = payload.nickname
-      ? `(ชื่อเล่น: ${payload.nickname}) · ${_currentStaffId}`
-      : _currentStaffId;
+      ? `(ชื่อเล่น: ${payload.nickname}) · ${maskSensitiveData(_currentStaffId, 'view_id', _currentStaffId)}`
+      : maskSensitiveData(_currentStaffId, 'view_id', _currentStaffId);
 
     toggleEditMode(false);
 
@@ -1736,11 +1737,10 @@ async function openStaffDetail(staffId) {
       const { person: p } = await res.json();
       if (p) {
         const nn = p.NICKNAME || '';
-        document.getElementById('sdmNickname').textContent       = nn ? `(ชื่อเล่น: ${nn}) · ${emp.id}` : emp.id;
-        const maskedPhone = maskSensitiveData(p.HR_PHONE, 'view_phone');
-        const maskedEmail = maskSensitiveData(p.HR_EMAIL, 'view_email');
+        document.getElementById('sdmNickname').textContent       = nn ? `(ชื่อเล่น: ${maskSensitiveData(nn, 'view_name', staffId)}) · ${maskSensitiveData(emp.id, 'view_id', staffId)}` : maskSensitiveData(emp.id, 'view_id', staffId);
+        const maskedPhone = maskSensitiveData(p.HR_PHONE, 'view_phone', staffId);
+        const maskedEmail = maskSensitiveData(p.HR_EMAIL, 'view_email', staffId);
 
-        document.getElementById('sdmNickname').textContent       = nn ? `(ชื่อเล่น: ${nn}) · ${emp.id}` : emp.id;
         document.getElementById('sdmPhone').innerHTML            = p.HR_PHONE
           ? `<a href="tel:${p.HR_PHONE}" style="color:var(--primary);font-weight:700;">${maskedPhone}</a>` : _NA;
         document.getElementById('sdmEmail').innerHTML            = p.HR_EMAIL

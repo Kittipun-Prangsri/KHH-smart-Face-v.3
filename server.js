@@ -25,7 +25,7 @@ app.use(session({
 }));
 
 // Global RBAC Switch
-const RBAC_ENABLED = false; // ปิดระบบสิทธิ์ชั่วคราวตามที่ร้องขอ
+const RBAC_ENABLED = true; // เปิดระบบสิทธิ์แล้ว
 
 // Middleware to check authentication
 const checkAuth = (req, res, next) => {
@@ -63,7 +63,7 @@ app.post('/login', async (req, res) => {
       const user = rows[0];
       const match = await bcrypt.compare(password, user.password);
       if (match) {
-        req.session.user = { id: user.id, username: user.username, fullname: user.fullname, role: user.role };
+        req.session.user = { id: user.id, username: user.username, fullname: user.fullname, role: user.role ? user.role.toLowerCase() : 'staff' };
         return res.redirect('/');
       }
     }
@@ -738,7 +738,7 @@ async function startServer() {
     if (existing.length === 0) {
       const hashed = await bcrypt.hash('root1234', 10);
       await pool.query('INSERT INTO users (username, password, fullname, role) VALUES (?, ?, ?, ?)', 
-        ['admin', hashed, 'Hospital Admin', 'super']);
+        ['admin', hashed, 'Hospital Admin', 'admin']);
     }
 
     // 3. Add default user if not exists

@@ -15,7 +15,8 @@
        class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/schedule' ? 'active' : '' %>"><i
         class="bi bi-clock-history"></i> <span>ตารางเวรตัวเอง</span></a>
 
-    <!-- Admin Only Menus (Now accessible to all) -->
+    <% if (locals.RBAC_ENABLED === false || (locals.user && user.role === 'admin')) { %>
+    <!-- Admin Menus -->
     <a href="/attendance"
       class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/attendance' ? 'active' : '' %>"><i
         class="bi bi-person-check"></i> <span>บันทึกเข้า-ออกงาน</span></a>
@@ -35,6 +36,35 @@
       class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/report/monthly' ? 'active' : '' %>"><i
         class="bi bi-calendar3"></i> <span>รายงานสรุปรายเดือน</span></a>
 
+    <!-- Dept Menus (Admin only) -->
+    <div class="sb-sec mt-3" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding-right:12px;" onclick="document.getElementById('deptMenuBox').style.display = document.getElementById('deptMenuBox').style.display === 'none' ? 'block' : 'none'">
+      <span>ข้อมูลแยกตามกลุ่มงาน</span> <i class="bi bi-chevron-down" style="font-size:10px;"></i>
+    </div>
+    
+    <div id="deptMenuBox" style="display: <%= typeof activeRoute !== 'undefined' && activeRoute.startsWith('/department/') ? 'block' : 'none' %>;">
+      <% const _depts = [
+        { id: 'strat', name: 'ประกันสุขภาพยุทธศาสตร์', icon: 'bi-clipboard2-data' },
+        { id: 'gen', name: 'บริหารทั่วไป', icon: 'bi-briefcase' },
+        { id: 'pri', name: 'บริการด้านปฐมภูมิฯ', icon: 'bi-house-heart' },
+        { id: 'pha', name: 'เภสัชกรรมฯ', icon: 'bi-capsule' },
+        { id: 'digi', name: 'สุขภาพดิจิทัล', icon: 'bi-pc-display' },
+        { id: 'nur', name: 'การพยาบาล', icon: 'bi-heart-pulse' },
+        { id: 'den', name: 'ทันตกรรม', icon: 'bi-bandaid' },
+        { id: 'medtech', name: 'เทคนิคการแพทย์', icon: 'bi-eyedropper' },
+        { id: 'rehab', name: 'เวชกรรมฟื้นฟู', icon: 'bi-person-wheelchair' },
+        { id: 'altmed', name: 'แพทย์แผนไทยฯ', icon: 'bi-flower1' },
+        { id: 'rad', name: 'รังสีวิทยา', icon: 'bi-x-diamond' },
+        { id: 'psy', name: 'จิตเวชและยาเสพติด', icon: 'bi-person-hearts' },
+        { id: 'med', name: 'การแพทย์', icon: 'bi-stethoscope' }
+      ]; %>
+      <% _depts.forEach(d => { %>
+        <a href="/department/<%= d.id %>" class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/department/' + d.id ? 'active' : '' %>" style="padding-left: 2rem; font-size: 13px;">
+          <i class="bi <%= d.icon %>" style="opacity:0.7;"></i> <span><%= d.name %></span>
+        </a>
+      <% }); %>
+    </div>
+
+    <!-- Admin configuration tools -->
     <div id="admin-tools">
       <div class="sb-sec">ฝ่ายบริหารระบบ</div>
       <a href="/admin/users"
@@ -45,22 +75,11 @@
           class="bi bi-shield-lock-fill"></i> <span>ตั้งค่าระดับสิทธิ์</span></a>
     </div>
 
-    <script>
-      function syncAdminMenu() {
-        const adminTools = document.getElementById('admin-tools');
-        if (adminTools) {
-          // Force Show: Admin tools will now be visible to all for troubleshooting
-          adminTools.style.display = 'block';
-        }
-      }
-      // Run on load and also listen for role changes (if any)
-      window.addEventListener('DOMContentLoaded', syncAdminMenu);
-      // Listen for the custom event from topbar.ejs when role changes
-      window.addEventListener('roleChanged', syncAdminMenu);
-    </script>
     <a href="/report/hours"
       class="sb-link <%= typeof activeRoute !== 'undefined' && activeRoute === '/report/hours' ? 'active' : '' %>"><i
         class="bi bi-file-earmark-medical"></i> <span>สรุปชั่วโมงทำงาน</span></a>
+    
+    <% } /* end if admin */ %>
   </div>
   <div class="sb-foot">
     <div class="sb-user">
