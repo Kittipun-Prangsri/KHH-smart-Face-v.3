@@ -7,7 +7,7 @@
     <!-- Google Fonts: Sarabun -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&subset=thai&display=swap" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/css/style.css">
@@ -18,9 +18,62 @@
         .user-card h5 { margin: 0; font-size: 18px; font-weight: 700; color: var(--primary); }
         .user-card p { font-size: 14px; color: var(--muted); margin: 0; display: flex; align-items: center; gap: 6px; }
         .role-badge { padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
-        .role-admin { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
-        .role-user { background: #eef2ff; color: #4f46e5; border: 1px solid #e0e7ff; }
+        .role-super { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+        .role-manager { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
+        .role-staff { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; }
+        .role-user { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
         .actions { display: flex; gap: 10px; border-top: 1px solid var(--border); padding-top: 16px; }
+        .actions button { flex: 1; }
+        
+        /* Modern Button Styles */
+        button, .btn {
+            min-height: 40px;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease !important;
+            cursor: pointer;
+        }
+        button:hover, .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn-teal {
+            background-color: var(--primary, #0d9488);
+            color: #fff;
+            border: none;
+            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.15);
+        }
+        .btn-teal:hover {
+            background-color: #0f766e;
+            box-shadow: 0 6px 16px rgba(13, 148, 136, 0.3);
+        }
+        .btn-outline-danger {
+            background-color: rgba(220, 38, 38, 0.05) !important;
+            color: #dc2626 !important;
+            border: 1px solid rgba(220, 38, 38, 0.2) !important;
+        }
+        .btn-outline-danger:hover {
+            background-color: #dc2626 !important;
+            color: #fff !important;
+            border-color: #dc2626 !important;
+            box-shadow: 0 6px 16px rgba(220, 38, 38, 0.25) !important;
+        }
+        .btn-outline-dark {
+            background-color: #fff !important;
+            color: #475569 !important;
+            border: 1px solid #cbd5e1 !important;
+        }
+        .btn-outline-dark:hover {
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+            border-color: #94a3b8 !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+        }
         
         /* Modal for Add User */
         .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:1000; display:flex; align-items:center; justify-content:center; visibility:hidden; opacity:0; transition:all 0.3s; }
@@ -63,7 +116,7 @@
     <div class="modal-overlay" id="userModal">
         <div class="modal-box">
             <h3 id="modalTitle">เพิ่มผู้ใช้งานใหม่</h3>
-            <form id="userForm">
+            <form id="userForm" accept-charset="UTF-8">
                 <input type="hidden" id="userId">
                 <div class="form-group">
                     <label>ค้นหาและเลือกบุคลากร (พิมพ์เลข CID หรือชื่อ)</label>
@@ -87,15 +140,17 @@
                     <small id="passHint" style="display:none; color:var(--muted); font-size:10px;">(เว้นว่างไว้หากไม่ต้องการเปลี่ยน)</small>
                 </div>
                 <div class="form-group">
-                    <label>ระดับสิทธิ์</label>
-                    <select id="role">
-                        <option value="user">User (ดูข้อมูลได้เท่านั้น)</option>
-                        <option value="admin">Admin (จัดการตารางเวรและพนักงานได้)</option>
+                    <label>ระดับสิทธิ์ (Role / Layer)</label>
+                    <select id="role" class="form-select">
+                        <option value="super">Super Admin (สิทธิ์สูงสุด)</option>
+                        <option value="manager">Manager (หัวหน้ากลุ่มงาน)</option>
+                        <option value="staff">Staff Admin (เจ้าหน้าที่ธุรการ)</option>
+                        <option value="user">General User (พนักงานทั่วไป)</option>
                     </select>
                 </div>
                 <div class="actions" style="border:none; margin:0; padding:0; display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-                    <button type="button" class="btn-outline-dark" onclick="closeModal()">ยกเลิก</button>
-                    <button type="submit" class="btn-teal">บันทึกข้อมูล</button>
+                    <button type="button" class="btn btn-outline-dark" onclick="closeModal()"><i class="bi bi-x-circle"></i> ยกเลิก</button>
+                    <button type="submit" class="btn btn-teal"><i class="bi bi-floppy-fill"></i> บันทึกข้อมูล</button>
                 </div>
             </form>
         </div>
@@ -107,7 +162,7 @@
 
         async function fetchUsers() {
             try {
-                const res = await fetch('/api/users');
+                const res = await fetch('/api/users', { headers: { 'Accept-Charset': 'utf-8' } });
                 const data = await res.json();
                 allUsers = data.users;
                 renderUsers();
@@ -116,7 +171,7 @@
 
         async function fetchPersonnel() {
             try {
-                const res = await fetch('/api/personnel');
+                const res = await fetch('/api/personnel', { headers: { 'Accept-Charset': 'utf-8' } });
                 const data = await res.json();
                 allPersonnel = data.personnel || [];
             } catch (err) { console.error('Personnel Fetch error:', err); }
@@ -124,21 +179,29 @@
 
         function renderUsers() {
             const container = document.getElementById('userList');
-            container.innerHTML = allUsers.map(u => `
+            container.innerHTML = allUsers.map(u => {
+                let roleLabel = u.role.toUpperCase();
+                if (u.role === 'super') roleLabel = 'Super Admin';
+                if (u.role === 'manager') roleLabel = 'Manager';
+                if (u.role === 'staff') roleLabel = 'Staff Admin';
+                if (u.role === 'user') roleLabel = 'Common User';
+
+                return `
                 <div class="user-card">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div>
                             <h5>${u.fullname}</h5>
                             <p><i class="bi bi-person-circle"></i> @${u.username}</p>
                         </div>
-                        <span class="role-badge role-${u.role}">${u.role.toUpperCase()}</span>
+                        <span class="role-badge role-${u.role}">${roleLabel}</span>
                     </div>
                     <div class="actions">
-                        <button class="btn-outline-dark" style="height:32px; font-size:12px;" onclick="editUser(${u.id})">แก้ไข</button>
-                        <button class="btn-outline-dark" style="height:32px; font-size:12px; color:var(--accent2); border-color:rgba(240,84,84,0.3);" onclick="deleteUser(${u.id})">ลบ</button>
+                        <button class="btn btn-sm btn-outline-dark" onclick="editUser(${u.id})"><i class="bi bi-pencil-square"></i> แก้ไข</button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${u.id})"><i class="bi bi-trash"></i> ลบ</button>
                     </div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function searchPersonnel(query) {
@@ -209,7 +272,10 @@
         async function deleteUser(id) {
             if (!confirm('ยืนยันหน้าการลบผู้ใช้งานนี้หรือไม่?')) return;
             try {
-                const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+                const res = await fetch(`/api/users/${id}`, { 
+                    method: 'DELETE',
+                    headers: { 'Accept-Charset': 'utf-8' }
+                });
                 const result = await res.json();
                 if (result.success) fetchUsers();
             } catch (err) { alert('เกิดข้อผิดพลาดในการลบ'); }
@@ -229,7 +295,10 @@
             try {
                 const res = await fetch('/api/users', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept-Charset': 'utf-8'
+                    },
                     body: JSON.stringify(data)
                 });
                 const result = await res.json();

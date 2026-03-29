@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>จัดตารางเวรพยาบาล - ระบบ KHH Smart Scan</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&subset=thai&display=swap" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    /* ── Page-level overrides ── */
+    .page { padding: 28px 36px; }
+
+    /* ── Summary Stats ── */
+    .sched-stat-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .sched-stat-box {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 1px 4px rgba(11,48,96,.05);
+      transition: transform .18s;
+    }
+    .sched-stat-box:hover { transform: translateY(-2px); }
+    .sched-stat-ico {
+      width: 38px; height: 38px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+    .sched-stat-val { font-size: 22px; font-weight: 800; line-height: 1; }
+    .sched-stat-lbl { font-size: 11px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+
+    /* ── Filter bar custom ── */
+    .tb-select { height: 36px; font-size: 12.5px; border-radius: 8px; border-color: var(--border); }
+
+    /* ── Action Buttons ── */
+    .btn-auto {
+      background: linear-gradient(135deg, #6366F1, #8B5CF6);
+      color: #fff; border: none;
+      border-radius: 8px; padding: 0 16px; height: 36px;
+      font-size: 12.5px; font-weight: 600;
+      display: inline-flex; align-items: center; gap: 6px;
+      box-shadow: 0 4px 12px rgba(99,102,241,.30);
+      transition: filter .2s;
+      cursor: pointer;
+    }
+    .btn-auto:hover { filter: brightness(1.1); }
+
+    /* ── Scheduling Grid Container ── */
+    .scheduling-wrap {
+      background: var(--card);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 6px rgba(11,48,96,.05);
+      overflow: hidden;
+    }
+    .scheduling-wrap .card-top {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    /* ── The Grid Table ── */
+    .sched-scroll { overflow-x: auto; }
+
+    .sched-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11.5px;
+    }
+    .sched-table th,
+    .sched-table td {
+      border: 1px solid #E2E8F0;
+      padding: 6px 5px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    /* Sticky first column (name) */
+    .sched-table th:first-child,
+    .sched-table td:first-child {
+      position: sticky; left: 0; z-index: 5;
+      background: #fff;
+      min-width: 190px; max-width: 190px;
+      text-align: left;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-right: 2px solid #CBD5E1;
+    }
+    .sched-table thead th:first-child { background: #F8FAFC; }
+
+    /* Sticky header row */
+    .sched-table thead th {
+      position: sticky; top: 0; z-index: 6;
+      background: #F8FAFC;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: .6px; text-transform: uppercase;
+      color: var(--muted);
+      padding: 9px 5px;
+    }
+    .sched-table thead th.weekend { background: #F1F5F9; color: #94a3b8; }
+    .sched-table thead th.today-col { background: #EEF2FF; color: #4F46E5; }
+
+    /* Day column header number */
+    .day-num { font-size: 13px; font-weight: 800; display: block; line-height: 1.1; }
+    .day-name { font-size: 9px; }
+
+    /* Cell backgrounds based on shift */
+    .cell-off    { background: #F8FAFC; }
+    .cell-morning   { background: #FFFBEB; }
+    .cell-afternoon { background: #EFF6FF; }
+    .cell-night  { background: #F5F3FF; }
+    .cell-leave  { background: #FEF2F2; cursor: not-allowed; }
+    .cell-today  { outline: 2px solid #6366F1; outline-offset: -1px; }
+
+    /* Shift dropdown select */
+    .shift-select {
+      width: 100%; min-width: 52px;
+      border: none; background: transparent;
+      font-size: 10.5px; font-weight: 700;
+      cursor: pointer; outline: none;
+      text-align: center;
+      color: inherit;
+      padding: 1px 2px;
+      border-radius: 4px;
+    }
+    .shift-select:focus { box-shadow: 0 0 0 2px rgba(99,102,241,.3); background: rgba(255,255,255,.8); }
+    .cell-leave .shift-select { pointer-events: none; color: #DC2626; }
+
+    /* Row hover */
+    .sched-table tbody tr:hover td { filter: brightness(.97); }
+    .sched-table tbody tr:hover td:first-child { background: #F0F4FF; }
+
+    /* Nurse name cell */
+    .nurse-name { font-size: 12.5px; font-weight: 700; color: var(--text); }
+    .nurse-role { font-size: 10px; color: var(--muted); margin-top: 1px; }
+    .nurse-av {
+      width: 26px; height: 26px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: #fff;
+      flex-shrink: 0; margin-right: 6px;
+    }
+
+    /* ── Legend ── */
+    .legend-bar {
+      padding: 12px 18px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+      font-size: 11.5px; color: var(--muted);
+    }
+    .legend-dot {
+      display: inline-block; width: 12px; height: 12px;
+      border-radius: 3px; border: 1px solid;
+      margin-right: 4px; vertical-align: middle;
+    }
+
+    /* ── Toast ── */
+    #toast-box {
+      position: fixed; bottom: 24px; right: 24px;
+      z-index: 9999; display: flex; flex-direction: column; gap: 8px;
+    }
+    .toast-msg {
+      background: #1E293B; color: #fff;
+      padding: 10px 18px; border-radius: 10px;
+      font-size: 13px; font-weight: 500;
+      display: flex; align-items: center; gap: 9px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.22);
+      animation: slideIn .3s ease;
+      min-width: 240px;
+    }
+    .toast-msg.success { border-left: 4px solid #10B981; }
+    .toast-msg.error { border-left: 4px solid #EF4444; }
+    .toast-msg.info { border-left: 4px solid #6366F1; }
+    @keyframes slideIn {
+      from { opacity:0; transform:translateX(20px); }
+      to   { opacity:1; transform:translateX(0); }
+    }
+
+    /* ── Loading overlay ── */
+    #loadingOverlay {
+      position: fixed; inset: 0; z-index: 8888;
+      background: rgba(255,255,255,.7); backdrop-filter: blur(3px);
+      display: none; align-items: center; justify-content: center;
+      flex-direction: column; gap: 12px;
+    }
+    #loadingOverlay.show { display: flex; }
+    .spin-circle {
+      width: 40px; height: 40px;
+      border: 4px solid #E2E8F0;
+      border-top-color: #6366F1;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .sched-stat-row { grid-template-columns: repeat(2, 1fr); }
+      .page { padding: 18px 16px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <%- include("components/sidebar") %>
+
+  <div class="main">
+    <%- include("components/topbar") %>
+
+    <div class="page">
+
+      <!-- PAGE HEADER -->
+      <div class="page-header" style="margin-bottom:20px;">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+          <div>
+            <h4 style="display:flex;align-items:center;gap:10px;">
+              <span style="background:linear-gradient(135deg,#6366F1,#8B5CF6);width:38px;height:38px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:17px;"><i class="bi bi-calendar2-week-fill"></i></span>
+              จัดตารางเวรพยาบาล
+            </h4>
+            <p style="margin-top:4px;">ระบบวางแผนการปฏิบัติงานรายเดือน &bull; กลุ่มงานการพยาบาล</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn-auto" id="btnAutoGen" onclick="autoGenerate()">
+              <i class="bi bi-magic"></i> Auto-Generate
+            </button>
+            <button class="btn-teal" id="btnSave" onclick="saveSchedule()">
+              <i class="bi bi-save2"></i> บันทึกตารางเวร
+            </button>
+            <button class="btn-outline-dark" onclick="exportExcel()">
+              <i class="bi bi-file-earmark-excel"></i> ส่งออก Excel
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUMMARY STATS -->
+      <div class="sched-stat-row" id="summaryStats">
+        <div class="sched-stat-box">
+          <div class="sched-stat-ico" style="background:#EEF2FF;color:#4F46E5;"><i class="bi bi-people-fill"></i></div>
+          <div>
+            <div class="sched-stat-val" id="statNurses">—</div>
+            <div class="sched-stat-lbl">พยาบาลทั้งหมด</div>
+          </div>
+        </div>
+        <div class="sched-stat-box">
+          <div class="sched-stat-ico" style="background:#FFFBEB;color:#D97706;"><i class="bi bi-brightness-high-fill"></i></div>
+          <div>
+            <div class="sched-stat-val" id="statMorning">—</div>
+            <div class="sched-stat-lbl">เวรเช้า (รายครั้ง)</div>
+          </div>
+        </div>
+        <div class="sched-stat-box">
+          <div class="sched-stat-ico" style="background:#EFF6FF;color:#3B82F6;"><i class="bi bi-clouds-fill"></i></div>
+          <div>
+            <div class="sched-stat-val" id="statAfternoon">—</div>
+            <div class="sched-stat-lbl">เวรบ่าย (รายครั้ง)</div>
+          </div>
+        </div>
+        <div class="sched-stat-box">
+          <div class="sched-stat-ico" style="background:#F5F3FF;color:#7C3AED;"><i class="bi bi-moon-stars-fill"></i></div>
+          <div>
+            <div class="sched-stat-val" id="statNight">—</div>
+            <div class="sched-stat-lbl">เวรดึก (รายครั้ง)</div>
+          </div>
+        </div>
+        <div class="sched-stat-box">
+          <div class="sched-stat-ico" style="background:#FEE2E2;color:#DC2626;"><i class="bi bi-calendar-x-fill"></i></div>
+          <div>
+            <div class="sched-stat-val" id="statLeave">—</div>
+            <div class="sched-stat-lbl">ลา / บล็อค</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FILTER BAR -->
+      <div class="filter-bar" style="margin-bottom:18px;">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1;">
+          <div class="input-group" style="max-width:210px;">
+            <span class="input-group-text" style="font-size:12px;"><i class="bi bi-calendar-event"></i></span>
+            <select class="form-select tb-select" id="monthSelect" onchange="initGrid()">
+              <option value="1">มกราคม</option>
+              <option value="2">กุมภาพันธ์</option>
+              <option value="3">มีนาคม</option>
+              <option value="4">เมษายน</option>
+              <option value="5">พฤษภาคม</option>
+              <option value="6">มิถุนายน</option>
+              <option value="7">กรกฎาคม</option>
+              <option value="8">สิงหาคม</option>
+              <option value="9">กันยายน</option>
+              <option value="10">ตุลาคม</option>
+              <option value="11">พฤศจิกายน</option>
+              <option value="12">ธันวาคม</option>
+            </select>
+          </div>
+          <div class="input-group" style="max-width:140px;">
+            <select class="form-select tb-select" id="yearSelect" onchange="initGrid()">
+              <option value="2025">2025</option>
+              <option value="2026" selected>2026</option>
+              <option value="2027">2027</option>
+            </select>
+          </div>
+          <button class="btn-teal" onclick="initGrid()" style="height:36px;padding:0 14px;font-size:12.5px;">
+            <i class="bi bi-arrow-clockwise"></i> โหลดข้อมูล
+          </button>
+          <div style="font-size:12px;color:var(--muted);">
+            <i class="bi bi-info-circle"></i>&nbsp;คัดกรองเฉพาะบุคลากรกลุ่มงานการพยาบาล
+          </div>
+        </div>
+        <div>
+          <small id="lastFetchInfo" class="text-muted" style="font-size:11px;"></small>
+        </div>
+      </div>
+
+      <!-- SCHEDULING GRID -->
+      <div class="scheduling-wrap">
+        <div class="card-top">
+          <div>
+            <div class="card-title" id="gridTitle">ตารางเวรประจำเดือน —</div>
+            <div class="card-sub" id="gridSub">กำลังโหลดข้อมูล...</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span id="nurseCountBadge" style="background:#EEF2FF;color:#4F46E5;font-size:11px;font-weight:700;padding:3px 12px;border-radius:20px;border:1px solid #C7D2FE;"></span>
+          </div>
+        </div>
+        <div class="sched-scroll" style="max-height:calc(100vh - 380px);">
+          <table class="sched-table" id="schedTable">
+            <thead id="schedHeader">
+              <tr>
+                <th>ชื่อ-นามสกุล บุคลากร</th>
+              </tr>
+            </thead>
+            <tbody id="schedBody">
+              <tr>
+                <td colspan="32" style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">
+                  <i class="bi bi-hourglass-split" style="font-size:24px;display:block;margin-bottom:8px;"></i>
+                  กำลังโหลดข้อมูล...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- Legend -->
+        <div class="legend-bar">
+          <span><span class="legend-dot" style="background:#FFFBEB;border-color:#FDE68A;"></span>เวรเช้า</span>
+          <span><span class="legend-dot" style="background:#EFF6FF;border-color:#BFDBFE;"></span>เวรบ่าย</span>
+          <span><span class="legend-dot" style="background:#F5F3FF;border-color:#DDD6FE;"></span>เวรดึก</span>
+          <span><span class="legend-dot" style="background:#FEF2F2;border-color:#FECACA;"></span>ลา (ระบบบล็อค)</span>
+          <span><span class="legend-dot" style="background:#F8FAFC;border-color:#E2E8F0;"></span>OFF วันหยุด</span>
+          <span style="margin-left:auto;font-size:10.5px;">เงื่อนไข Auto-Gen: หยุดอย่างน้อย 1 วัน/สัปดาห์ &bull; ไม่ขึ้นเวรซ้ำวันเดียวกัน &bull; บล็อควันลา</span>
+        </div>
+      </div>
+
+    </div><!-- /page -->
+  </div><!-- /main -->
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay">
+    <div class="spin-circle"></div>
+    <div style="font-size:13px;color:var(--muted);font-weight:600;">กำลังประมวลผล...</div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-box"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+  /* ================================================================
+     SETTINGS & CONSTANTS
+  ================================================================ */
+  const SETTINGS_KEY = 'hospital_settings';
+  const AV_COLORS = ['#4F46E5','#059669','#D97706','#DC2626','#7C3AED','#0891B2','#DB2777','#16A34A','#F59E0B','#0E7490'];
+
+  const DAY_NAMES_TH = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+  const MONTH_NAMES_TH = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+  const DEFAULT_SETTINGS = {
+    shifts: [
+      { name: 'เช้า',  start: '08:00', end: '16:00', color: '#F59E0B' },
+      { name: 'บ่าย',  start: '16:00', end: '24:00', color: '#3B82F6' },
+      { name: 'ดึก',   start: '00:00', end: '08:00', color: '#7C3AED' }
+    ]
+  };
+
+  function loadSettings() {
+    try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || DEFAULT_SETTINGS; }
+    catch { return DEFAULT_SETTINGS; }
+  }
+
+  /* ── State ── */
+  let nurses = [];
+  let scheduleData = {};      // { nurseId: { day: shiftName } }
+  let monthLeaveData = {};    // { 'YYYY-MM-DD': { name: bool } }
+
+  /* ================================================================
+     TOAST HELPER
+  ================================================================ */
+  function showToast(msg, type = 'info', icon = 'bi-info-circle-fill') {
+    const box = document.getElementById('toast-box');
+    const el = document.createElement('div');
+    el.className = `toast-msg ${type}`;
+    el.innerHTML = `<i class="bi ${icon}"></i><span>${msg}</span>`;
+    box.appendChild(el);
+    setTimeout(() => el.remove(), 3500);
+  }
+
+  function showLoading(show) {
+    document.getElementById('loadingOverlay').classList.toggle('show', show);
+  }
+
+  /* ================================================================
+     INITIALIZATION
+  ================================================================ */
+  async function initGrid() {
+    showLoading(true);
+    const month = parseInt(document.getElementById('monthSelect').value);
+    const year  = parseInt(document.getElementById('yearSelect').value);
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    // Update title
+    document.getElementById('gridTitle').textContent = `ตารางเวรประจำเดือน ${MONTH_NAMES_TH[month]} ${year + 543}`;
+    document.getElementById('gridSub').textContent = `${daysInMonth} วัน | กลุ่มงานการพยาบาล`;
+
+    // Render header
+    buildHeader(year, month, daysInMonth);
+
+    // Fetch data
+    await fetchData(year, month);
+
+    // Render body
+    renderGrid();
+    updateStats();
+
+    document.getElementById('lastFetchInfo').textContent = `อัพเดทล่าสุด: ${new Date().toLocaleTimeString('th-TH')}`;
+    showLoading(false);
+  }
+
+  function buildHeader(year, month, daysInMonth) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const header = document.getElementById('schedHeader');
+    let html = '<tr><th>ชื่อ-นามสกุล บุคลากร</th>';
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(year, month - 1, d);
+      const dow  = date.getDay(); // 0=Sun,6=Sat
+      const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const isWeekend = (dow === 0 || dow === 6);
+      const isToday   = dateStr === todayStr;
+      let cls = isToday ? 'today-col' : (isWeekend ? 'weekend' : '');
+      html += `<th class="${cls}"><span class="day-num">${d}</span><span class="day-name">${DAY_NAMES_TH[dow]}</span></th>`;
+    }
+    html += '</tr>';
+    header.innerHTML = html;
+  }
+
+  /* ================================================================
+     FETCH DATA
+  ================================================================ */
+  async function fetchData(year, month) {
+    try {
+      const res = await fetch('/api/data', { headers: { 'Accept-Charset': 'utf-8' } });
+      if (!res.ok) throw new Error('API error');
+      const db = await res.json();
+
+      // Filter nursing dept
+      const all = db.employees || [];
+      nurses = all.filter(e => e.dept === 'กลุ่มงานการพยาบาล');
+
+      // Ensure scheduleData has entries for every nurse
+      nurses.forEach(n => {
+        if (!scheduleData[n.id]) scheduleData[n.id] = {};
+      });
+
+      document.getElementById('nurseCountBadge').textContent = `พยาบาล ${nurses.length} คน`;
+
+      // Build monthLeaveData from serviceWorkData
+      // Each entry in serviceWorkData has { name, morning, afternoon }
+      // We treat any non-null, non-time-format value as "leave for that day"
+      // Since /api/data only gives today's leave, we store against today's date.
+      const serviceWorkData = db.serviceWorkData || [];
+      monthLeaveData = {};
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      serviceWorkData.forEach(sw => {
+        // sw.morning and sw.afternoon correspond to today's day column (di{day})
+        const isLeave = (sw.morning && sw.morning.trim() !== '' && !/^\d{2}:\d{2}/.test(sw.morning))
+                     || (sw.afternoon && sw.afternoon.trim() !== '' && !/^\d{2}:\d{2}/.test(sw.afternoon));
+        if (isLeave) {
+          if (!monthLeaveData[todayStr]) monthLeaveData[todayStr] = {};
+          monthLeaveData[todayStr][sw.name] = true;
+        }
+      });
+
+    } catch (err) {
+      console.error('Fetch error:', err);
+      showToast('ไม่สามารถดึงข้อมูลจาก API ได้', 'error', 'bi-exclamation-triangle-fill');
+    }
+  }
+
+  /* ================================================================
+     RENDER GRID
+  ================================================================ */
+  function renderGrid() {
+    const tbody = document.getElementById('schedBody');
+    const month = parseInt(document.getElementById('monthSelect').value);
+    const year  = parseInt(document.getElementById('yearSelect').value);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const settings = loadSettings();
+    const shiftOptions = settings.shifts.map(s => s.name);
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    if (nurses.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="${daysInMonth + 1}" style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">
+        <i class="bi bi-people" style="font-size:32px;display:block;margin-bottom:8px;opacity:.4;"></i>
+        ไม่พบข้อมูลบุคลากรกลุ่มงานการพยาบาล
+      </td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = nurses.map((nurse, idx) => {
+      const color = AV_COLORS[idx % AV_COLORS.length];
+      const init  = nurse.name ? nurse.name.charAt(0) : 'N';
+
+      let cells = `<td>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="nurse-av" style="background:${color};">${init}</div>
+          <div>
+            <div class="nurse-name">${nurse.name}</div>
+            <div class="nurse-role">${nurse.role || 'พยาบาลวิชาชีพ'}</div>
+          </div>
+        </div>
+      </td>`;
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr   = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const isToday   = dateStr === todayStr;
+        const isOnLeave = monthLeaveData[dateStr] && monthLeaveData[dateStr][nurse.name];
+        const current   = scheduleData[nurse.id][day] || 'OFF';
+
+        let cellClass = 'cell-off';
+        if (isOnLeave) {
+          cellClass = 'cell-leave';
+        } else if (current === 'เช้า') {
+          cellClass = 'cell-morning';
+        } else if (current === 'บ่าย') {
+          cellClass = 'cell-afternoon';
+        } else if (current === 'ดึก') {
+          cellClass = 'cell-night';
+        } else if (current === 'ลา') {
+          cellClass = 'cell-leave';
+        }
+
+        const todayCls = isToday ? ' cell-today' : '';
+        const displayVal = isOnLeave ? 'ลา' : current;
+
+        cells += `<td class="${cellClass}${todayCls}">
+          <select class="shift-select" ${isOnLeave ? 'disabled' : ''} onchange="updateShift('${nurse.id}', ${day}, this.value, '${dateStr}')">
+            <option value="OFF" ${displayVal === 'OFF' ? 'selected' : ''}>OFF</option>
+            ${shiftOptions.map(opt => `<option value="${opt}" ${displayVal === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+            <option value="ลา" ${displayVal === 'ลา' ? 'selected' : ''}>ลา</option>
+          </select>
+        </td>`;
+      }
+      return `<tr>${cells}</tr>`;
+    }).join('');
+  }
+
+  function updateShift(nurseId, day, value, dateStr) {
+    if (!scheduleData[nurseId]) scheduleData[nurseId] = {};
+    scheduleData[nurseId][day] = value;
+    // Update cell class in-place without full re-render for performance
+    const selects = document.querySelectorAll('.shift-select');
+    updateStats(); // Recalculate stats
+    // Re-render only affected cell colour via parent TD
+    selects.forEach(sel => {
+      if (sel.getAttribute('onchange') && sel.getAttribute('onchange').includes(`'${nurseId}', ${day},`)) {
+        const td = sel.closest('td');
+        td.className = getCellClass(value);
+      }
+    });
+  }
+
+  function getCellClass(shift) {
+    if (shift === 'เช้า')  return 'cell-morning';
+    if (shift === 'บ่าย')  return 'cell-afternoon';
+    if (shift === 'ดึก')   return 'cell-night';
+    if (shift === 'ลา')    return 'cell-leave';
+    return 'cell-off';
+  }
+
+  /* ================================================================
+     STATISTICS
+  ================================================================ */
+  function updateStats() {
+    const month = parseInt(document.getElementById('monthSelect').value);
+    const year  = parseInt(document.getElementById('yearSelect').value);
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    let morning = 0, afternoon = 0, night = 0, leave = 0;
+
+    nurses.forEach(n => {
+      for (let d = 1; d <= daysInMonth; d++) {
+        const v = scheduleData[n.id]?.[d] || 'OFF';
+        if (v === 'เช้า')  morning++;
+        else if (v === 'บ่าย')  afternoon++;
+        else if (v === 'ดึก')   night++;
+        else if (v === 'ลา')    leave++;
+      }
+    });
+
+    document.getElementById('statNurses').textContent   = nurses.length;
+    document.getElementById('statMorning').textContent  = morning;
+    document.getElementById('statAfternoon').textContent = afternoon;
+    document.getElementById('statNight').textContent    = night;
+    document.getElementById('statLeave').textContent    = leave;
+  }
+
+  /* ================================================================
+     AUTO-GENERATE
+  ================================================================ */
+  function autoGenerate() {
+    if (nurses.length === 0) {
+      showToast('ไม่มีข้อมูลพยาบาล กรุณาโหลดข้อมูลก่อน', 'error', 'bi-exclamation-triangle-fill');
+      return;
+    }
+
+    showLoading(true);
+
+    const month = parseInt(document.getElementById('monthSelect').value);
+    const year  = parseInt(document.getElementById('yearSelect').value);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const settings = loadSettings();
+    const shiftNames = settings.shifts.map(s => s.name); // ['เช้า','บ่าย','ดึก']
+
+    nurses.forEach(nurse => {
+      let weekWorkCount = 0;
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr   = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const isOnLeave = monthLeaveData[dateStr] && monthLeaveData[dateStr][nurse.name];
+
+        // -- Constraint 1: leave day → block, don't count as workday
+        if (isOnLeave) {
+          scheduleData[nurse.id][day] = 'ลา';
+          // Don't reset weekWorkCount, leave doesn't count as rest day either
+          continue;
+        }
+
+        // -- Constraint 2: must rest at least 1 day per 7-day cycle
+        if (weekWorkCount >= 6) {
+          scheduleData[nurse.id][day] = 'OFF';
+          weekWorkCount = 0;
+          // reset full cycle whenever we force a rest
+          if (day % 7 === 0) weekWorkCount = 0;
+          continue;
+        }
+
+        // -- Random assignment: 70% chance of shift, 30% OFF
+        const rand = Math.random();
+        if (rand > 0.30) {
+          const shift = shiftNames[Math.floor(Math.random() * shiftNames.length)];
+          scheduleData[nurse.id][day] = shift;
+          weekWorkCount++;
+        } else {
+          scheduleData[nurse.id][day] = 'OFF';
+          weekWorkCount = 0;
+        }
+
+        // Reset weekly counter every 7-day boundary
+        if (day % 7 === 0) weekWorkCount = 0;
+      }
+    });
+
+    setTimeout(() => {
+      renderGrid();
+      updateStats();
+      showLoading(false);
+      showToast('จัดตารางเวรอัตโนมัติเรียบร้อยแล้ว', 'success', 'bi-check-circle-fill');
+    }, 300);
+  }
+
+  /* ================================================================
+     SAVE SCHEDULE → POST /api/schedule/save
+  ================================================================ */
+  async function saveSchedule() {
+    if (nurses.length === 0) {
+      showToast('ไม่มีข้อมูลตารางเวร', 'error', 'bi-exclamation-triangle-fill');
+      return;
+    }
+
+    const month = document.getElementById('monthSelect').value;
+    const year  = document.getElementById('yearSelect').value;
+
+    const payload = { year: parseInt(year), month: parseInt(month), schedule: scheduleData };
+
+    showLoading(true);
+    try {
+      const res = await fetch('/api/schedule/save', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept-Charset': 'utf-8'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        showToast('บันทึกตารางเวรสำเร็จ', 'success', 'bi-check-circle-fill');
+      } else if (res.status === 404) {
+        // API endpoint not yet wired → save to localStorage as fallback
+        localStorage.setItem(`schedule_${year}_${month}`, JSON.stringify(scheduleData));
+        showToast('บันทึกสำเร็จ (Offline Mode – localStorage)', 'info', 'bi-cloud-slash-fill');
+      } else {
+        showToast('เกิดข้อผิดพลาดในการบันทึก', 'error', 'bi-exclamation-triangle-fill');
+      }
+    } catch (err) {
+      // Network/server unavailable – fallback to localStorage
+      localStorage.setItem(`schedule_${year}_${month}`, JSON.stringify(scheduleData));
+      showToast('บันทึกสำเร็จ (Offline Mode)', 'info', 'bi-wifi-off');
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  /* ================================================================
+     EXPORT EXCEL (CSV with UTF-8 BOM)
+  ================================================================ */
+  function exportExcel() {
+    if (nurses.length === 0) {
+      showToast('ไม่มีข้อมูลสำหรับส่งออก', 'error', 'bi-exclamation-triangle-fill');
+      return;
+    }
+
+    const month = parseInt(document.getElementById('monthSelect').value);
+    const year  = parseInt(document.getElementById('yearSelect').value);
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    // Header row
+    let csv = `ตารางเวรกลุ่มงานการพยาบาล,เดือน ${MONTH_NAMES_TH[month]} ${year + 543}\n`;
+    csv += 'บุคลากร,ตำแหน่ง,';
+    for (let i = 1; i <= daysInMonth; i++) {
+      const dow = new Date(year, month - 1, i).getDay();
+      csv += `${i}(${DAY_NAMES_TH[dow]}),`;
+    }
+    csv += 'รวมเช้า,รวมบ่าย,รวมดึก,รวมOFF\n';
+
+    // Data rows
+    nurses.forEach(nurse => {
+      let m = 0, a = 0, n = 0, off = 0;
+      let row = `"${nurse.name}","${nurse.role || ''}",`;
+      for (let day = 1; day <= daysInMonth; day++) {
+        const v = scheduleData[nurse.id]?.[day] || 'OFF';
+        row += `"${v}",`;
+        if (v === 'เช้า')  m++;
+        else if (v === 'บ่าย')  a++;
+        else if (v === 'ดึก')   n++;
+        else if (v === 'OFF')   off++;
+      }
+      row += `${m},${a},${n},${off}\n`;
+      csv += row;
+    });
+
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `Nurse_Schedule_${year}_${String(month).padStart(2,'0')}.csv`;
+    a.click();
+    showToast('ส่งออก Excel สำเร็จ', 'success', 'bi-file-earmark-excel-fill');
+  }
+
+  /* ================================================================
+     SET CURRENT MONTH/YEAR ON LOAD
+  ================================================================ */
+  function setCurrentMonthYear() {
+    const now = new Date();
+    const monthSel = document.getElementById('monthSelect');
+    const yearSel  = document.getElementById('yearSelect');
+
+    // Set month
+    monthSel.value = now.getMonth() + 1;
+
+    // Set year – add option if not present
+    const yr = now.getFullYear().toString();
+    if (![...yearSel.options].some(o => o.value === yr)) {
+      const opt = document.createElement('option');
+      opt.value = yr; opt.textContent = yr;
+      yearSel.appendChild(opt);
+    }
+    yearSel.value = yr;
+  }
+
+  /* ================================================================
+     BOOT
+  ================================================================ */
+  window.addEventListener('DOMContentLoaded', () => {
+    setCurrentMonthYear();
+    initGrid();
+  });
+  </script>
+
+</body>
+</html>

@@ -408,9 +408,7 @@
     </div>
     <div class="topbar-actions" id="topbar-actions-panel">
       <button class="btn btn-ghost btn-sm" onclick="goToday(); showTab('calendar')">สัปดาห์นี้</button>
-      <% if (locals.user && user.role === 'admin') { %>
-        <button class="btn btn-primary btn-sm" onclick="openAddEmpModal()">+ เพิ่มพนักงาน</button>
-      <% } %>
+      <button class="btn btn-primary btn-sm" onclick="openAddEmpModal()">+ เพิ่มพนักงาน</button>
     </div>
   </div>
 
@@ -638,13 +636,9 @@
       </div>
     </div>
     <div class="modal-actions">
-      <% if (locals.user && user.role === 'admin') { %>
         <button class="btn btn-danger" id="btn-delete" onclick="deleteEmployee()" style="display:none; margin-right:auto;">ลบข้อมูล</button>
-      <% } %>
       <button class="btn btn-ghost" onclick="closeModalDirect()">ยกเลิก</button>
-      <% if (locals.user && user.role === 'admin') { %>
         <button class="btn btn-primary" onclick="saveEmployee()">บันทึก</button>
-      <% } %>
     </div>
   </div>
 </div>

@@ -32,3 +32,33 @@
     <div class="icon-btn" title="ตั้งค่า" onclick="openSettings()"><i class="bi bi-gear"></i></div>
   </div>
 </div>
+
+<script>
+  // Actual Logged-in User Role from Session
+  const CURRENT_ROLE = "<%= (locals.user && user.role) ? user.role : 'staff' %>";
+  const RBAC_ENABLED = false; // ปิดระบบสิทธิ์ชั่วคราว
+  console.log('Current User Role:', CURRENT_ROLE, '| RBAC_ENABLED:', RBAC_ENABLED);
+
+  function checkPermission(capability) {
+    if (!RBAC_ENABLED) return true;
+    if (capability === 'view_dashboard') return true;
+    return CURRENT_ROLE === 'admin';
+  }
+
+  function maskSensitiveData(str, capability) {
+    if (!RBAC_ENABLED) return str;
+    if (!str || str === '-') return '-';
+    // Admin sees everything
+    if (checkPermission(capability)) return str;
+    
+    // Masking phone example: 08x-xxx-xxxx
+    if (capability === 'view_phone') {
+        return '08x-xxx-xxxx';
+    }
+    // Masking email: m****@****.com
+    if (capability === 'view_email') {
+        return '********'; // completely hide email
+    }
+    return '********';
+  }
+</script>

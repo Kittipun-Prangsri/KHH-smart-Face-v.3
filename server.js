@@ -24,22 +24,28 @@ app.use(session({
   cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 hours
 }));
 
+// Global RBAC Switch
+const RBAC_ENABLED = false; // ปิดระบบสิทธิ์ชั่วคราวตามที่ร้องขอ
+
 // Middleware to check authentication
 const checkAuth = (req, res, next) => {
   if (req.session.user) {
     res.locals.user = req.session.user; // Make user data available in EJS
+    res.locals.RBAC_ENABLED = RBAC_ENABLED; // Expose to EJS views
     next();
   } else {
     res.redirect('/login');
   }
 };
 
-// Middleware to check admin role
+// Middleware to check admin role (strict Admin only)
 const checkAdmin = (req, res, next) => {
+  if (!RBAC_ENABLED) return next();
+  
   if (req.session.user && req.session.user.role === 'admin') {
     next();
   } else {
-    res.status(403).send('Access Denied: Admin role required');
+    res.send(`<script>alert('พื้นที่เฉพาะผู้ดูแลระบบเท่านั้น'); window.location.href='/';</script>`);
   }
 };
 
@@ -323,13 +329,165 @@ app.post('/api/schedule', checkAuth, checkAdmin, (req, res) => {
   }
 });
 
-// API Endpoint to update data (mock)
-app.post('/api/data', (req, res) => {
-  const newDb = req.body;
-  // NOTE: For a real SQL application, the frontend should send partial updates (e.g., POST /api/scan).
-  // If the frontend sends the whole db state to save, we'll mock success to avoid overwriting everything expensively.
-  console.log('Received payload to update data. (Mocked response)');
-  res.json({ success: true, message: 'Data update logic needs specific endpoints' });
+// API Endpoint: Save full monthly nurse schedule
+const MONTHLY_SCHEDULE_DIR = path.join(__dirname, 'data', 'monthly_schedules');
+
+app.post('/api/schedule/save', checkAuth, (req, res) => {
+  try {
+    const { year, month, schedule } = req.body;
+    if (!year || !month || !schedule) {
+      return res.status(400).json({ error: 'Missing year, month or schedule payload' });
+    }
+    // Ensure directory exists
+    if (!fs.existsSync(MONTHLY_SCHEDULE_DIR)) {
+      fs.mkdirSync(MONTHLY_SCHEDULE_DIR, { recursive: true });
+    }
+    const filename = path.join(MONTHLY_SCHEDULE_DIR, `schedule_${year}_${String(month).padStart(2,'0')}.json`);
+    const payload  = { year, month, savedAt: new Date().toISOString(), schedule };
+    fs.writeFileSync(filename, JSON.stringify(payload, null, 2), 'utf8');
+    console.log(`[Schedule] Saved: ${filename}`);
+    res.json({ success: true, file: filename });
+  } catch (err) {
+    console.error('Error saving monthly schedule:', err);
+    res.status(500).json({ error: 'Failed to save schedule' });
+  }
+});
+
+// API Endpoint: Read saved monthly nurse schedule
+app.get('/api/schedule/load', checkAuth, (req, res) => {
+  try {
+    const { year, month } = req.query;
+    if (!year || !month) return res.status(400).json({ error: 'Missing year/month' });
+    const filename = path.join(MONTHLY_SCHEDULE_DIR, `schedule_${year}_${String(month).padStart(2,'0')}.json`);
+    if (fs.existsSync(filename)) {
+      const data = JSON.parse(fs.readFileSync(filename, 'utf8'));
+      res.json({ success: true, data });
+    } else {
+      res.json({ success: true, data: null });
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load schedule' });
+  }
+});
+
+// API Endpoint: Get per-staff schedule + attendance + leave for a given month
+// GET /api/schedule/staff/:id/:yearMonth  (yearMonth = YYYY-MM)
+app.get('/api/schedule/staff/:id/:yearMonth', checkAuth, async (req, res) => {
+  try {
+    const { id, yearMonth } = req.params;
+    const [year, month] = yearMonth.split('-').map(Number);
+    if (!year || !month) return res.status(400).json({ error: 'Invalid yearMonth' });
+
+    const targetMonth = yearMonth; // 'YYYY-MM'
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    // ── 1. Shifts from monthly_schedules JSON ──
+    const shifts = [];
+    const schedFile = path.join(MONTHLY_SCHEDULE_DIR, `schedule_${year}_${String(month).padStart(2,'0')}.json`);
+    if (fs.existsSync(schedFile)) {
+      const savedSched = JSON.parse(fs.readFileSync(schedFile, 'utf8'));
+      const empSched   = (savedSched.schedule || {})[id] || {};
+      Object.entries(empSched).forEach(([day, shift]) => {
+        if (shift && shift !== 'OFF') {
+          shifts.push({ day: parseInt(day), shift });
+        }
+      });
+    } else {
+      // Fallback: use the old schedule.json (per-date entries)
+      if (fs.existsSync(SCHEDULE_FILE)) {
+        const old = JSON.parse(fs.readFileSync(SCHEDULE_FILE, 'utf8'));
+        old.filter(s => s.emp_id === id && s.date && s.date.startsWith(targetMonth))
+           .forEach(s => {
+             const day = parseInt(s.date.split('-')[2]);
+             shifts.push({ day, shift: s.shift });
+           });
+      }
+    }
+
+    // ── 2. Attendance times from Hikvision (all days in this month) ──
+    let times = [];
+    try {
+      const [rows] = await hosofficePool.query(`
+        SELECT
+          DAY(AccessDate)        AS day,
+          MIN(AccessTime)        AS time_in,
+          MAX(AccessTime)        AS time_out
+        FROM hikvision
+        WHERE EmployeeID = ?
+          AND AccessDate LIKE ?
+        GROUP BY DAY(AccessDate)
+        ORDER BY day
+      `, [id, `${targetMonth}-%`]);
+      times = rows.map(r => ({ day: r.day, time_in: r.time_in, time_out: r.time_out }));
+    } catch (dbErr) {
+      console.warn('[schedule/staff] hikvision query failed:', dbErr.message);
+    }
+
+    // ── 3. Leave days from service_work_scans_morning ──
+    let leaves = [];
+    try {
+      // Fetch the person's internal ID first
+      const [personRows] = await hosofficePool.query(
+        `SELECT p.ID FROM hr_person p WHERE p.FINGLE_ID = ? LIMIT 1`, [id]
+      );
+      if (personRows.length > 0) {
+        const personId = personRows[0].ID;
+        // Build dynamic column list for all days in month
+        const dayNums = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+        // Query morning service_work row for this person & month
+        const [mRows] = await hosofficePool.query(
+          `SELECT * FROM service_work_scans_morning WHERE hr_person_id = ? AND year_and_month = ? LIMIT 1`,
+          [personId, targetMonth]
+        );
+        if (mRows.length > 0) {
+          const row = mRows[0];
+          dayNums.forEach(d => {
+            const col  = `di${d}`;
+            const val  = row[col];
+            // A non-null, non-time value means leave
+            if (val && typeof val === 'string' && val.trim() !== '' && !/^\d{2}:\d{2}/.test(val)) {
+              leaves.push({ day: d, reason: val });
+            }
+          });
+        }
+      }
+    } catch (leaveErr) {
+      console.warn('[schedule/staff] leave query failed:', leaveErr.message);
+    }
+
+    res.json({ success: true, staffId: id, yearMonth, shifts, times, leaves });
+  } catch (err) {
+    console.error('Error in /api/schedule/staff:', err);
+    res.status(500).json({ error: 'Failed to load staff schedule', shifts: [], times: [], leaves: [] });
+  }
+});
+
+// API Endpoint to update staff details (REAL implementation)
+app.post('/api/staff/update', checkAuth, async (req, res) => {
+  const { id, nickname, phone, email } = req.body;
+  
+  if (!id) {
+    return res.status(400).json({ success: false, message: 'Missing staff ID' });
+  }
+
+  try {
+    // Update MySQL hosoffice.hr_person
+    const [result] = await hosofficePool.query(
+      `UPDATE hr_person SET NICKNAME = ?, HR_PHONE = ?, HR_EMAIL = ? WHERE FINGLE_ID = ?`,
+      [nickname || null, phone || null, email || null, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'Personnel not found.' });
+    }
+
+    console.log(`Updated personnel info for ID ${id}: Nickname=${nickname}, Phone=${phone}, Email=${email}`);
+    res.json({ success: true, message: 'อัปเดตข้อมูลบุคลากรเรียบร้อยแล้ว' });
+
+  } catch (error) {
+    console.error('Error updating personnel:', error);
+    res.status(500).json({ success: false, message: 'Database update failed.' });
+  }
 });
 
 // API Endpoint to get personnel from hosoffice
@@ -349,6 +507,109 @@ app.get('/api/personnel', checkAuth, async (req, res) => {
   } catch (error) {
     console.error('Database query error (hosoffice):', error);
     res.status(500).json({ personnel: [] });
+  }
+});
+
+// API Endpoint: Get single personnel record by FINGLE_ID
+app.get('/api/personnel/:fingleId', checkAuth, async (req, res) => {
+  try {
+    const { fingleId } = req.params;
+    const [rows] = await hosofficePool.query(`
+      SELECT
+        p.ID, p.FINGLE_ID, p.HR_PREFIX_ID,
+        p.HR_FNAME, p.HR_LNAME, p.NICKNAME,
+        p.HR_PHONE, p.HR_EMAIL,
+        d.HR_DEPARTMENT_NAME,
+        s.HR_STATUS_NAME,
+        p.HR_STARTWORK_DATE,
+        p.HR_CID
+      FROM hr_person p
+      LEFT JOIN hr_department d ON p.HR_DEPARTMENT_ID = d.HR_DEPARTMENT_ID
+      LEFT JOIN hr_status s     ON s.HR_STATUS_ID = p.HR_STATUS_ID
+      WHERE p.FINGLE_ID = ?
+      LIMIT 1
+    `, [fingleId]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ person: null, message: 'Not found' });
+    }
+    res.json({ person: rows[0] });
+  } catch (error) {
+    console.error('GET /api/personnel/:fingleId error:', error);
+    res.status(500).json({ person: null });
+  }
+});
+
+// API Endpoint: 7-day attendance history for one employee
+// GET /api/attendance/history/:fingleId
+app.get('/api/attendance/history/:fingleId', checkAuth, async (req, res) => {
+  try {
+    const { fingleId } = req.params;
+    const workStart = req.query.workStart || '08:00'; // e.g. "08:30" for late threshold
+
+    // Build last-7-days date range
+    const today = new Date();
+    const history = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
+
+      let check_in  = '-';
+      let check_out = '-';
+      let status    = 'absent';
+
+      try {
+        const [rows] = await hosofficePool.query(`
+          SELECT
+            DATE_FORMAT(MIN(AccessTime), '%H:%i') AS time_in,
+            DATE_FORMAT(MAX(AccessTime), '%H:%i') AS time_out
+          FROM hikvision
+          WHERE EmployeeID = ? AND AccessDate = ?
+        `, [fingleId, dateStr]);
+
+        if (rows.length > 0 && rows[0].time_in) {
+          check_in  = rows[0].time_in;
+          check_out = rows[0].time_out || '-';
+
+          // Determine status
+          const [lh, lm] = workStart.split(':').map(Number);
+          const [ih, im] = check_in.split(':').map(Number);
+          const lateBy   = (ih * 60 + im) - (lh * 60 + lm);
+          status = lateBy > 5 ? 'late' : 'normal';
+        }
+
+        // Check if leave — scan serviceWorkData table
+        try {
+          const day = d.getDate();
+          const ym  = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+          const [pRows] = await hosofficePool.query(
+            `SELECT p.ID FROM hr_person p WHERE p.FINGLE_ID = ? LIMIT 1`, [fingleId]
+          );
+          if (pRows.length > 0) {
+            const [swRows] = await hosofficePool.query(
+              `SELECT \`di${day}\` AS dayval FROM service_work_scans_morning
+               WHERE hr_person_id = ? AND year_and_month = ? LIMIT 1`,
+              [pRows[0].ID, ym]
+            );
+            if (swRows.length > 0 && swRows[0].dayval && !/^\d{2}:\d{2}/.test(swRows[0].dayval)) {
+              status    = 'leave';
+              check_in  = '-';
+              check_out = '-';
+            }
+          }
+        } catch { /* leave check failed silently */ }
+
+      } catch { /* hikvision query failed for this day */ }
+
+      history.push({ date: dateStr, check_in, check_out, status });
+    }
+
+    res.json({ success: true, staff_id: fingleId, history });
+  } catch (err) {
+    console.error('GET /api/attendance/history error:', err);
+    res.status(500).json({ history: [] });
   }
 });
 
@@ -422,11 +683,14 @@ const pages = [
   { path: '/attendance', view: 'attendance' },
   { path: '/personnel', view: 'personnel' },
   { path: '/schedule', view: 'schedule' },
+  { path: '/scheduling', view: 'scheduling' },
+  { path: '/reports', view: 'reports' },
   ...depts.map(d => ({ path: `/department/${d.id}`, view: 'department', deptName: d.name })),
   { path: '/report/daily', view: 'daily-report' },
   { path: '/report/monthly', view: 'monthly-report' },
   { path: '/report/hours', view: 'hours-summary' },
-  { path: '/admin/users', view: 'users' }
+  { path: '/admin/users', view: 'users' },
+  { path: '/admin/permissions', view: 'permissions' }
 ];
 
 // Mock user session currently logged in (Can be from DB or JWT later)
@@ -437,9 +701,18 @@ const loggedInUser = {
 };
 
 pages.forEach(p => {
-  app.get(p.path, checkAuth, (req, res) => {
-    res.render(p.view, { activeRoute: p.path, deptName: p.deptName || '' });
-  });
+  const adminPaths = ['/attendance', '/personnel', '/scheduling', '/reports', '/report/daily', '/report/monthly', '/report/hours', '/admin/users', '/admin/permissions', '/permissions'];
+  const isDept = p.path.startsWith('/department/');
+
+  if (adminPaths.includes(p.path) || isDept) {
+    app.get(p.path, checkAuth, checkAdmin, (req, res) => {
+      res.render(p.view, { activeRoute: p.path, deptName: p.deptName || '' });
+    });
+  } else {
+    app.get(p.path, checkAuth, (req, res) => {
+      res.render(p.view, { activeRoute: p.path, deptName: p.deptName || '' });
+    });
+  }
 });
 
 // Helper function to initialize DB and Start Server
@@ -452,7 +725,7 @@ async function startServer() {
         username VARCHAR(50) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
         fullname VARCHAR(100),
-        role ENUM('admin', 'user') DEFAULT 'user',
+        role ENUM('super', 'manager', 'staff', 'user', 'admin') DEFAULT 'user',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
     `);
@@ -465,7 +738,7 @@ async function startServer() {
     if (existing.length === 0) {
       const hashed = await bcrypt.hash('root1234', 10);
       await pool.query('INSERT INTO users (username, password, fullname, role) VALUES (?, ?, ?, ?)', 
-        ['admin', hashed, 'Hospital Admin', 'admin']);
+        ['admin', hashed, 'Hospital Admin', 'super']);
     }
 
     // 3. Add default user if not exists
